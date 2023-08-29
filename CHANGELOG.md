@@ -1,3 +1,7 @@
+## [3.2.3] - 2023-08-29
+### Added
+- Added support for DLSS
+
 ## [3.2.2] - 2022-04-05
 
 ### Fixed
