@@ -30,18 +30,6 @@ namespace UnityEngine.Rendering.PostProcessing
         public float UpdateFrequency = 2;
         [Range(0, 1)]
         public float MipmapBiasOverride = 1f;
-
-        public bool IsSupported() {
-#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
-            if(device == null) {
-                return false;
-            }
-            return device.IsFeatureAvailable(NVIDIA.GraphicsDeviceFeature.DLSS);
-#else
-            return false;
-#endif
-        }
-
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
 
         public Vector2 jitter
@@ -51,7 +39,6 @@ namespace UnityEngine.Rendering.PostProcessing
         public Vector2Int renderSize => _maxRenderSize;
         public Vector2Int displaySize => _displaySize;
 
-        NVIDIA.OptimalDLSSSettingsData optSettings;
         DlssViewData dlssData;
         ViewState state;
 
@@ -104,13 +91,25 @@ namespace UnityEngine.Rendering.PostProcessing
             AEG.DLSS.DLSS_UTILS.OnResetAllMipMaps();
         }
 
-
+        public bool IsSupported() {
+#if AEG_DLSS
+            if(device == null) {
+                return false;
+            }
+            return device.IsFeatureAvailable(NVIDIA.GraphicsDeviceFeature.DLSS);
+#else
+            return false;
+#endif
+        }
 
         public DepthTextureMode GetCameraFlags() {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
-        public void Release() {
+        public void Release(CommandBuffer cmd) {
+            if(state != null) {
+                state.Cleanup(cmd);
+            }
         }
 
         public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {

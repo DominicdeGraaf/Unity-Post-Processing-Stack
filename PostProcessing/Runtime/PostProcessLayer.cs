@@ -463,9 +463,9 @@ namespace UnityEngine.Rendering.PostProcessing
 
 #endif
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
-            if(m_CurrentContext.IsDLSSActive()) {
-                dlss.Release();
-            }
+            //if(m_CurrentContext.IsDLSSActive()) {
+            //    //dlss.Release(context.command);
+            //}
 #endif
             m_LogHistogram.Release();
 
@@ -640,14 +640,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.SetRenderSize(fsr2.renderSize);
 #endif
             } else if(context.IsDLSSActive()) {
-#if AEG_DLSS
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 if(!dlss.IsSupported()) {
                     antialiasingMode = dlss.fallBackAA;
                 }
-#if UNITY_STANDALONE_WIN && UNITY_64
                 dlss.ConfigureCameraViewport(context);
                 context.SetRenderSize(dlss.renderSize);
-#endif     
 #endif
             } else {
 #if AEG_FSR2
@@ -656,7 +654,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 // Ensure all of DLSS's resources are released when it's not in use
-                dlss.Release();
+                dlss.Release(context.command);
 #endif
                 if(m_originalTargetTexture != null) {
                     m_Camera.targetTexture = m_originalTargetTexture;
@@ -950,7 +948,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if(context.IsFSR2Active())
                 flags |= fsr2.GetCameraFlags();
 #endif
-#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64     
             if(context.IsDLSSActive())
                 flags |= dlss.GetCameraFlags();
 #endif
@@ -1206,7 +1204,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     lastTarget = fsrTarget;
 #endif
                 } else if(context.IsDLSSActive()) {
-#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
+#if AEG_DLSS  && UNITY_STANDALONE_WIN && UNITY_64
                     this.dlss.ConfigureJitteredProjectionMatrix(context);
 
                     // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
