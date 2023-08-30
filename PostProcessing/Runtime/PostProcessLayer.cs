@@ -697,12 +697,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 aoRenderer.Get().RenderAfterOpaque(context);
             }
 
-
-
             bool isFogActive = fog.IsEnabledAndSupported(context);
             bool hasCustomOpaqueOnlyEffects = HasOpaqueOnlyEffects(context);
             int opaqueOnlyEffects = 0;
-            //opaqueOnlyEffects += fsrRequiresOpaque ? 1 : 0;
             opaqueOnlyEffects += isScreenSpaceReflectionsActive ? 1 : 0;
             opaqueOnlyEffects += isFogActive ? 1 : 0;
             opaqueOnlyEffects += hasCustomOpaqueOnlyEffects ? 1 : 0;
@@ -724,12 +721,6 @@ namespace UnityEngine.Rendering.PostProcessing
                     cmd.BuiltinBlit(context.source, context.destination, RuntimeUtilities.copyStdMaterial, stopNaNPropagation ? 1 : 0);
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
                 }
-
-                //if(fsrRequiresOpaque) {
-                //    m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
-                //    cmd.BuiltinBlit(context.source, m_opaqueOnly);
-                //    opaqueOnlyEffects--;
-                //}
 
                 if(isScreenSpaceReflectionsActive) {
 
