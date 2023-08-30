@@ -5,7 +5,7 @@ using UnityEngine.Assertions;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if (ENABLE_VR_MODULE && ENABLE_VR)
+#if(ENABLE_VR_MODULE && ENABLE_VR)
     using XRSettings = UnityEngine.XR.XRSettings;
 #endif
 
@@ -457,15 +457,11 @@ namespace UnityEngine.Rendering.PostProcessing
 
             temporalAntialiasing.Release();
 #if AEG_FSR2
-            if(m_CurrentContext.IsFSR2Active()) {
-                fsr2.Release();
-            }
+            fsr2.Release();
 
 #endif
 #if AEG_DLSS
-            if(m_CurrentContext.IsDLSSActive()) {
-                dlss.Release();
-            }
+            dlss.Release();
 #endif
             m_LogHistogram.Release();
 
@@ -516,7 +512,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #if UNITY_2019_3_OR_NEWER
             if(SystemInfo.usesLoadStoreActions)
 #else
-            if (Application.isMobilePlatform)
+            if(Application.isMobilePlatform)
 #endif
             {
                 Rect r = m_Camera.rect;
@@ -560,7 +556,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, XRSettings.renderViewportScale);
             } else
 #endif
-              {
+            {
                 Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, 1.0f);
             }
 
@@ -701,16 +697,16 @@ namespace UnityEngine.Rendering.PostProcessing
                 aoRenderer.Get().RenderAfterOpaque(context);
             }
 
-            //#if AEG_FSR2
-            //            bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
-            //#else
-            //            bool fsrRequiresOpaque = false;
-            //#endif
+#if AEG_FSR2
+                        bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
+#else
+            bool fsrRequiresOpaque = false;
+#endif
 
             bool isFogActive = fog.IsEnabledAndSupported(context);
             bool hasCustomOpaqueOnlyEffects = HasOpaqueOnlyEffects(context);
             int opaqueOnlyEffects = 0;
-            //opaqueOnlyEffects += fsrRequiresOpaque ? 1 : 0;
+            opaqueOnlyEffects += fsrRequiresOpaque ? 1 : 0;
             opaqueOnlyEffects += isScreenSpaceReflectionsActive ? 1 : 0;
             opaqueOnlyEffects += isFogActive ? 1 : 0;
             opaqueOnlyEffects += hasCustomOpaqueOnlyEffects ? 1 : 0;
@@ -734,12 +730,12 @@ namespace UnityEngine.Rendering.PostProcessing
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
                 }
 
-                //if(fsrRequiresOpaque) {
-                //    m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
-                //    cmd.BuiltinBlit(context.source, m_opaqueOnly);
-                //    opaqueOnlyEffects--;
-                //    UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
-                //}
+                if(fsrRequiresOpaque) {
+                    m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
+                    cmd.BuiltinBlit(context.source, m_opaqueOnly);
+                    opaqueOnlyEffects--;
+                    //UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
+                }
 
                 if(isScreenSpaceReflectionsActive) {
                     ssrRenderer.RenderOrLog(context);
