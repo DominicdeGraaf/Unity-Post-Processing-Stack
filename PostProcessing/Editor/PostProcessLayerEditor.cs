@@ -158,7 +158,7 @@ namespace UnityEditor.Rendering.PostProcessing
 #if AEG_DLSS
             m_DLSSQualityMode = FindProperty(x => x.dlss.qualityMode);
             m_AntiGhosting = FindProperty(x => x.dlss.antiGhosting);
-          
+
             m_AutoTextureUpdate = FindProperty(x => x.dlss.AutoTextureUpdate);
             m_UpdateFrequency = FindProperty(x => x.dlss.UpdateFrequency);
             m_MipmapBiasOverride = FindProperty(x => x.dlss.MipmapBiasOverride);
@@ -311,6 +311,9 @@ namespace UnityEditor.Rendering.PostProcessing
 #endif
 
                 } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.DLSS) {
+#if !UNITY_STANDALONE_WIN || !UNITY_64
+                    EditorGUILayout.LabelField("----- DLSS is not supported on this platform ------", EditorStyles.boldLabel);
+#endif
                     EditorGUI.indentLevel++;
                     m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 2 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingDLSSFallBackMethodNames);
                     EditorGUI.indentLevel--;
@@ -324,6 +327,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     }
 #else
 #if AEG_DLSS
+
                     EditorGUILayout.PropertyField(m_DLSSQualityMode);
                     EditorGUILayout.PropertyField(m_AntiGhosting);
 

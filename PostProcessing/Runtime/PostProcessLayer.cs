@@ -5,7 +5,7 @@ using UnityEngine.Assertions;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if(ENABLE_VR_MODULE && ENABLE_VR)
+#if (ENABLE_VR_MODULE && ENABLE_VR)
     using XRSettings = UnityEngine.XR.XRSettings;
 #endif
 
@@ -321,7 +321,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
 
 #endif
-#if AEG_DLSS
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 if(m_CurrentContext.IsDLSSActive()) {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     dlss.ResetCameraViewport(m_CurrentContext);
@@ -457,11 +457,15 @@ namespace UnityEngine.Rendering.PostProcessing
 
             temporalAntialiasing.Release();
 #if AEG_FSR2
-            fsr2.Release();
+            if(m_CurrentContext.IsFSR2Active()) {
+                fsr2.Release();
+            }
 
 #endif
-#if AEG_DLSS
-            dlss.Release();
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
+            if(m_CurrentContext.IsDLSSActive()) {
+                dlss.Release();
+            }
 #endif
             m_LogHistogram.Release();
 
@@ -512,7 +516,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #if UNITY_2019_3_OR_NEWER
             if(SystemInfo.usesLoadStoreActions)
 #else
-            if(Application.isMobilePlatform)
+            if (Application.isMobilePlatform)
 #endif
             {
                 Rect r = m_Camera.rect;
@@ -556,7 +560,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, XRSettings.renderViewportScale);
             } else
 #endif
-            {
+              {
                 Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, 1.0f);
             }
 
@@ -636,7 +640,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.SetRenderSize(fsr2.renderSize);
 #endif
             } else if(context.IsDLSSActive()) {
-#if AEG_DLSS
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 if(!dlss.IsSupported()) {
                     antialiasingMode = dlss.fallBackAA;
                 }
@@ -648,7 +652,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 // Ensure all of FSR2's resources are released when it's not in use
                 fsr2.Release();
 #endif
-#if AEG_DLSS
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 // Ensure all of DLSS's resources are released when it's not in use
                 dlss.Release();
 #endif
@@ -697,18 +701,26 @@ namespace UnityEngine.Rendering.PostProcessing
                 aoRenderer.Get().RenderAfterOpaque(context);
             }
 
+            //#if AEG_FSR2
+            //            bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
+            //#else
+            //            bool fsrRequiresOpaque = false;
+            //#endif
+
             bool isFogActive = fog.IsEnabledAndSupported(context);
             bool hasCustomOpaqueOnlyEffects = HasOpaqueOnlyEffects(context);
             int opaqueOnlyEffects = 0;
+            //opaqueOnlyEffects += fsrRequiresOpaque ? 1 : 0;
             opaqueOnlyEffects += isScreenSpaceReflectionsActive ? 1 : 0;
             opaqueOnlyEffects += isFogActive ? 1 : 0;
             opaqueOnlyEffects += hasCustomOpaqueOnlyEffects ? 1 : 0;
 
             // This works on right eye because it is resolved/populated at runtime
             var cameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
-            var cmd = m_LegacyCmdBufferOpaque;
-            if(opaqueOnlyEffects > 0) {
 
+
+            if(opaqueOnlyEffects > 0) {
+                var cmd = m_LegacyCmdBufferOpaque;
                 context.command = cmd;
                 context.source = cameraTarget;
                 context.destination = cameraTarget;
@@ -722,8 +734,14 @@ namespace UnityEngine.Rendering.PostProcessing
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
                 }
 
-                if(isScreenSpaceReflectionsActive) {
+                //if(fsrRequiresOpaque) {
+                //    m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
+                //    cmd.BuiltinBlit(context.source, m_opaqueOnly);
+                //    opaqueOnlyEffects--;
+                //    UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
+                //}
 
+                if(isScreenSpaceReflectionsActive) {
                     ssrRenderer.RenderOrLog(context);
                     opaqueOnlyEffects--;
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
@@ -738,26 +756,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 if(hasCustomOpaqueOnlyEffects)
                     RenderOpaqueOnly(context);
 
-
-
                 cmd.ReleaseTemporaryRT(srcTarget);
             }
-
-#if AEG_FSR2
-            bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
-#else
-            bool fsrRequiresOpaque = false;
-#endif
-
-            //FSR
-            if(fsrRequiresOpaque) {
-                context.source = cameraTarget;
-
-                m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
-                cmd.BuiltinBlit(context.source, m_opaqueOnly);
-            }
-
-
 
             // Post-transparency stack
             int tempRt = -1;
@@ -790,7 +790,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = m_upscaledOutput;
             }
 #endif
-#if AEG_DLSS
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
             if(!finalBlitToCameraTarget && m_CurrentContext.IsDLSSActive()) {
 
                 var displaySize = dlss.displaySize;
@@ -831,7 +831,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 fsr2.ResetCameraViewport(m_CurrentContext);
             }
 #endif
-#if AEG_DLSS
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
             // Set the camera back to its original parameters, so we can output at full display resolution
             if(finalBlitToCameraTarget && m_CurrentContext.IsDLSSActive()) {
                 dlss.ResetCameraViewport(m_CurrentContext);
@@ -948,7 +948,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if(context.IsFSR2Active())
                 flags |= fsr2.GetCameraFlags();
 #endif
-#if AEG_DLSS         
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64     
             if(context.IsDLSSActive())
                 flags |= dlss.GetCameraFlags();
 #endif
@@ -1181,9 +1181,6 @@ namespace UnityEngine.Rendering.PostProcessing
                     lastTarget = taaTarget;
                 } else if(context.IsFSR2Active()) {
 #if AEG_FSR2
-
-
-
                     fsr2.ConfigureJitteredProjectionMatrix(context);
 
                     // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
@@ -1195,8 +1192,6 @@ namespace UnityEngine.Rendering.PostProcessing
                     context.destination = fsrTarget;
                     fsr2.colorOpaqueOnly = m_opaqueOnly;
                     fsr2.Render(context);
-
-
                     context.source = fsrTarget;
                     context.destination = finalDestination;
 
@@ -1209,7 +1204,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     lastTarget = fsrTarget;
 #endif
                 } else if(context.IsDLSSActive()) {
-#if AEG_DLSS
+#if AEG_DLSS  && UNITY_STANDALONE_WIN && UNITY_64
                     this.dlss.ConfigureJitteredProjectionMatrix(context);
 
                     // Set the upscaler's output to full display resolution, as well as for all following post-processing effects

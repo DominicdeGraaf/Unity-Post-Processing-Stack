@@ -20,13 +20,8 @@ namespace UnityEngine.Rendering.PostProcessing
     public class DLSS
     {
         public Antialiasing fallBackAA = Antialiasing.None;
-
-#if AEG_DLSS
-
         [Header("DLSS Settings")]
-        public NVIDIA.DLSSQuality qualityMode = NVIDIA.DLSSQuality.MaximumQuality;
-
-
+        public DLSSQuality qualityMode = DLSSQuality.MaximumQuality;
         [Range(0, 1)] public float antiGhosting = 0.1f;
 
         [Header("MipMap Settings")]
@@ -34,6 +29,14 @@ namespace UnityEngine.Rendering.PostProcessing
         public float UpdateFrequency = 2;
         [Range(0, 1)]
         public float MipmapBiasOverride = 1f;
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
+
+    
+
+
+  
+
+    
 
         public Vector2 jitter
         {

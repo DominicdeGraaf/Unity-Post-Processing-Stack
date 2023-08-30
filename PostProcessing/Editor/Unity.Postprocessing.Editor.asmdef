@@ -6,7 +6,8 @@
         "Unity.XR.Management",
         "Unity.XR.Management.Editor",
         "com.alteregogames.aeg-fsr.Runtime",
-        "com.alteregogames.aeg-dlss.Editor"
+        "com.alteregogames.aeg-dlss.Editor",
+        "com.alteregogames.aeg-dlss.Runtime"
     ],
     "includePlatforms": [
         "Editor"
