@@ -6,12 +6,13 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 
+using UnityEngine.NVIDIA;
+
 #if AEG_DLSS
 using static AEG.DLSS.DLSS_UTILS;
 using AEG.DLSS;
 using NVIDIA = UnityEngine.NVIDIA;
 #endif
-
 
 namespace UnityEngine.Rendering.PostProcessing
 {
@@ -30,13 +31,6 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(0, 1)]
         public float MipmapBiasOverride = 1f;
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
-
-    
-
-
-  
-
-    
 
         public Vector2 jitter
         {
