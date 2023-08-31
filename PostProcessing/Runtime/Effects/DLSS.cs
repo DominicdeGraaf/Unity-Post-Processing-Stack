@@ -20,6 +20,7 @@ namespace UnityEngine.Rendering.PostProcessing
     [Serializable]
     public class DLSS
     {
+#if AEG_DLSS
         public Antialiasing fallBackAA = Antialiasing.None;
         [Header("DLSS Settings")]
         public DLSSQuality qualityMode = DLSSQuality.MaximumQuality;
@@ -30,7 +31,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public float UpdateFrequency = 2;
         [Range(0, 1)]
         public float MipmapBiasOverride = 1f;
-#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
+#if UNITY_STANDALONE_WIN && UNITY_64
 
         public Vector2 jitter
         {
@@ -258,6 +259,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             return new Vector2Int(Mathf.CeilToInt(_maxRenderSize.x * ScalableBufferManager.widthScaleFactor), Mathf.CeilToInt(_maxRenderSize.y * ScalableBufferManager.heightScaleFactor));
         }
+#endif
 #endif
     }
 }
