@@ -711,8 +711,9 @@ namespace UnityEngine.Rendering.PostProcessing
             // This works on right eye because it is resolved/populated at runtime
             var cameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
 
-            var cmd = m_LegacyCmdBufferOpaque;
+
             if(opaqueOnlyEffects > 0) {
+                var cmd = m_LegacyCmdBufferOpaque;
                 context.command = cmd;
                 context.source = cameraTarget;
                 context.destination = cameraTarget;
@@ -744,17 +745,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.ReleaseTemporaryRT(srcTarget);
             }
 
-#if AEG_FSR2
-            bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
-#else
-            bool fsrRequiresOpaque = false;
-#endif
-            if(fsrRequiresOpaque) {
-                context.command = cmd;
-                context.source = cameraTarget;
-
-                m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
-                cmd.BuiltinBlit(context.source, m_opaqueOnly);
+            // Create a copy of the opaque-only color buffer for auto-reactive mask generation
+            if(context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition)) {
+                m_opaqueOnly = context.GetScreenSpaceTemporaryRT(colorFormat: sourceFormat);
+                m_LegacyCmdBufferOpaque.BuiltinBlit(cameraTarget, m_opaqueOnly);
             }
 
             // Post-transparency stack
