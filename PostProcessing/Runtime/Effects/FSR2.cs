@@ -36,7 +36,8 @@ namespace UnityEngine.Rendering.PostProcessing
     {
         [Tooltip("Fallback AA for when FSR 2 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
-
+        [Range(0, 1)]
+        public float antiGhosting = 0.1f;
 #if AEG_FSR2
         public Func<PostProcessRenderContext, IFsr2Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks(context.resources);
 
@@ -313,6 +314,10 @@ namespace UnityEngine.Rendering.PostProcessing
 
             jitterX = 2.0f * jitterX / scaledRenderSize.x;
             jitterY = 2.0f * jitterY / scaledRenderSize.y;
+
+            jitterX += UnityEngine.Random.Range(-0.001f * antiGhosting, 0.001f * antiGhosting);
+            jitterY += UnityEngine.Random.Range(-0.001f * antiGhosting, 0.001f * antiGhosting);
+
 
             var jitterTranslationMatrix = Matrix4x4.Translate(new Vector3(jitterX, jitterY, 0));
             camera.nonJitteredProjectionMatrix = camera.projectionMatrix;

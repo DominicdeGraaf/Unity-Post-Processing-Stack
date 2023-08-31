@@ -50,6 +50,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_FsrTcrMaskTexture;
 
         SerializedProperty m_FSRFallBack;
+        SerializedProperty m_FSRAntiGhosting;
 
         //DLSS
         SerializedProperty m_DLSSQualityMode;
@@ -60,8 +61,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_AutoTextureUpdate;
         SerializedProperty m_UpdateFrequency;
         SerializedProperty m_MipmapBiasOverride;
-        SerializedProperty m_AntiGhosting;
-
+        SerializedProperty m_DLSSAntiGhosting;
 
         SerializedProperty m_FogEnabled;
         SerializedProperty m_FogExcludeSkybox;
@@ -141,10 +141,6 @@ namespace UnityEditor.Rendering.PostProcessing
 
             m_FsrReactiveMaskTexture = FindProperty(x => x.fsr2.reactiveMask);
 
-            m_AutoTextureUpdate = FindProperty(x => x.fsr2.AutoTextureUpdate);
-            m_UpdateFrequency = FindProperty(x => x.fsr2.UpdateFrequency);
-            m_MipmapBiasOverride = FindProperty(x => x.fsr2.MipmapBiasOverride);
-
             m_FsrAutoTcr = FindProperty(x => x.fsr2.autoGenerateTransparencyAndComposition);
             m_FsrAutoTcrParams = FindProperty(x => x.fsr2.generateTransparencyAndCompositionParameters);
             m_FsrTcrMaskTexture = FindProperty(x => x.fsr2.transparencyAndCompositionMask);
@@ -153,11 +149,12 @@ namespace UnityEditor.Rendering.PostProcessing
             m_UpdateFrequency = FindProperty(x => x.fsr2.UpdateFrequency);
             m_MipmapBiasOverride = FindProperty(x => x.fsr2.MipmapBiasOverride);
 
+            m_FSRAntiGhosting = FindProperty(x => x.fsr2.antiGhosting);
           
 #endif
 #if AEG_DLSS
             m_DLSSQualityMode = FindProperty(x => x.dlss.qualityMode);
-            m_AntiGhosting = FindProperty(x => x.dlss.antiGhosting);
+            m_DLSSAntiGhosting = FindProperty(x => x.dlss.antiGhosting);
 
             m_AutoTextureUpdate = FindProperty(x => x.dlss.AutoTextureUpdate);
             m_UpdateFrequency = FindProperty(x => x.dlss.UpdateFrequency);
@@ -281,8 +278,8 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUI.indentLevel--;
 
 #if AEG_FSR2
-
                     EditorGUILayout.PropertyField(m_FsrQualityMode);
+                    EditorGUILayout.PropertyField(m_FSRAntiGhosting);
                     EditorGUILayout.PropertyField(m_FsrPerformSharpen);
                     if(m_FsrPerformSharpen.boolValue) {
                         EditorGUI.indentLevel++;
@@ -329,7 +326,7 @@ namespace UnityEditor.Rendering.PostProcessing
 #if AEG_DLSS
 
                     EditorGUILayout.PropertyField(m_DLSSQualityMode);
-                    EditorGUILayout.PropertyField(m_AntiGhosting);
+                    EditorGUILayout.PropertyField(m_DLSSAntiGhosting);
 
                     EditorGUILayout.PropertyField(m_AutoTextureUpdate);
                     if(m_AutoTextureUpdate.boolValue) {

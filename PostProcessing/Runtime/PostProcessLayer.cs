@@ -701,16 +701,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 aoRenderer.Get().RenderAfterOpaque(context);
             }
 
-            //#if AEG_FSR2
-            //            bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
-            //#else
-            //            bool fsrRequiresOpaque = false;
-            //#endif
-
             bool isFogActive = fog.IsEnabledAndSupported(context);
             bool hasCustomOpaqueOnlyEffects = HasOpaqueOnlyEffects(context);
             int opaqueOnlyEffects = 0;
-            //opaqueOnlyEffects += fsrRequiresOpaque ? 1 : 0;
             opaqueOnlyEffects += isScreenSpaceReflectionsActive ? 1 : 0;
             opaqueOnlyEffects += isFogActive ? 1 : 0;
             opaqueOnlyEffects += hasCustomOpaqueOnlyEffects ? 1 : 0;
@@ -718,9 +711,8 @@ namespace UnityEngine.Rendering.PostProcessing
             // This works on right eye because it is resolved/populated at runtime
             var cameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
 
-
+            var cmd = m_LegacyCmdBufferOpaque;
             if(opaqueOnlyEffects > 0) {
-                var cmd = m_LegacyCmdBufferOpaque;
                 context.command = cmd;
                 context.source = cameraTarget;
                 context.destination = cameraTarget;
@@ -733,13 +725,6 @@ namespace UnityEngine.Rendering.PostProcessing
                     cmd.BuiltinBlit(context.source, context.destination, RuntimeUtilities.copyStdMaterial, stopNaNPropagation ? 1 : 0);
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
                 }
-
-                //if(fsrRequiresOpaque) {
-                //    m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
-                //    cmd.BuiltinBlit(context.source, m_opaqueOnly);
-                //    opaqueOnlyEffects--;
-                //    UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
-                //}
 
                 if(isScreenSpaceReflectionsActive) {
                     ssrRenderer.RenderOrLog(context);
@@ -757,6 +742,19 @@ namespace UnityEngine.Rendering.PostProcessing
                     RenderOpaqueOnly(context);
 
                 cmd.ReleaseTemporaryRT(srcTarget);
+            }
+
+#if AEG_FSR2
+            bool fsrRequiresOpaque = context.IsFSR2Active() && (fsr2.autoGenerateReactiveMask || fsr2.autoGenerateTransparencyAndComposition);
+#else
+            bool fsrRequiresOpaque = false;
+#endif
+            if(fsrRequiresOpaque) {
+                context.command = cmd;
+                context.source = cameraTarget;
+
+                m_opaqueOnly = context.GetScreenSpaceTemporaryRT();
+                cmd.BuiltinBlit(context.source, m_opaqueOnly);
             }
 
             // Post-transparency stack
