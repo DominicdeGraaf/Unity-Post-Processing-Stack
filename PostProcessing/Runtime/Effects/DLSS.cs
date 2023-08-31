@@ -20,8 +20,9 @@ namespace UnityEngine.Rendering.PostProcessing
     [Serializable]
     public class DLSS
     {
-#if AEG_DLSS
         public Antialiasing fallBackAA = Antialiasing.None;
+
+#if AEG_DLSS
         [Header("DLSS Settings")]
         public DLSSQuality qualityMode = DLSSQuality.MaximumQuality;
         [Range(0, 1)] public float antiGhosting = 0.1f;
