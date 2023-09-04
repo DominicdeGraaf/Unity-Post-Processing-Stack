@@ -6,9 +6,8 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 
-using UnityEngine.NVIDIA;
-
 #if AEG_DLSS
+using UnityEngine.NVIDIA;
 using static AEG.DLSS.DLSS_UTILS;
 using AEG.DLSS;
 using NVIDIA = UnityEngine.NVIDIA;
@@ -21,6 +20,10 @@ namespace UnityEngine.Rendering.PostProcessing
     public class DLSS
     {
         public Antialiasing fallBackAA = Antialiasing.None;
+        public Vector2 jitter
+        {
+            get; private set;
+        }
 
 #if AEG_DLSS
         [Header("DLSS Settings")]
@@ -34,10 +37,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public float MipmapBiasOverride = 1f;
 #if UNITY_STANDALONE_WIN && UNITY_64
 
-        public Vector2 jitter
-        {
-            get; private set;
-        }
+      
         public Vector2Int renderSize => _maxRenderSize;
         public Vector2Int displaySize => _displaySize;
 

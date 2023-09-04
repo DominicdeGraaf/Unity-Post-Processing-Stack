@@ -196,12 +196,18 @@ namespace UnityEngine.Rendering.PostProcessing
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, blend));
             } else if(context.IsFSR2Active()) {
 #if AEG_FSR2
-                var jitter = context.superResolution.jitter;
+                var jitter = context.superResolution2.jitter;
+                sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, m_ResetHistory ? 0f : 0.85f));
+#endif
+            } else if (context.IsDLSSActive())
+            {
+#if AEG_DLSS
+                var jitter = context.deepLearningSuperSampling.jitter;
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, m_ResetHistory ? 0f : 0.85f));
 #endif
             }
 
-            if(context.IsTemporalAntialiasingActive() || context.IsFSR2Active()) {
+            if (context.IsTemporalAntialiasingActive() || context.IsFSR2Active()) {
                 int pp = m_HistoryPingPong[context.xrActiveEye];
                 var historyRead = CheckHistory(context.xrActiveEye, ++pp % 2, context, cocFormat);
                 var historyWrite = CheckHistory(context.xrActiveEye, ++pp % 2, context, cocFormat);

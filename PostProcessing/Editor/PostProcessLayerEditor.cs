@@ -30,37 +30,51 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_FxaaFastMode;
         SerializedProperty m_FxaaKeepAlpha;
 
-        //FSR
-        SerializedProperty m_FsrQualityMode;
-        SerializedProperty m_FsrPerformSharpen;
-        SerializedProperty m_FsrSharpness;
-        SerializedProperty m_FsrEnableFP16;
-        SerializedProperty m_FsrExposureSource;
-        SerializedProperty m_FsrExposureTexture;
-        SerializedProperty m_FsrPreExposure;
-        SerializedProperty m_FsrAutoReactive;
-        SerializedProperty m_FsrReactiveScale;
-        SerializedProperty m_FsrReactiveThreshold;
-        SerializedProperty m_FsrReactiveBinaryValue;
-        SerializedProperty m_FsrReactiveFlags;
-        SerializedProperty m_FsrReactiveMaskTexture;
+        //FSR 1
+        SerializedProperty m_FSR1QualityMode;
+        SerializedProperty m_FSR1PerformSharpen;
+        SerializedProperty m_FSR1Sharpness;
 
-        SerializedProperty m_FsrAutoTcr;
-        SerializedProperty m_FsrAutoTcrParams;
-        SerializedProperty m_FsrTcrMaskTexture;
+        SerializedProperty m_FSR1FallBack;
+        SerializedProperty m_FSR1AutoTextureUpdate;
+        SerializedProperty m_FSR1UpdateFrequency;
+        SerializedProperty m_FSR1MipmapBiasOverride;
+        //FSR 2
+        SerializedProperty m_FSR2QualityMode;
+        SerializedProperty m_FSR2PerformSharpen;
+        SerializedProperty m_FSR2Sharpness;
+        SerializedProperty m_FSR2EnableFP16;
+        SerializedProperty m_FSR2ExposureSource;
+        SerializedProperty m_FSR2ExposureTexture;
+        SerializedProperty m_FSR2PreExposure;
+        SerializedProperty m_FSR2AutoReactive;
+        SerializedProperty m_FSR2ReactiveScale;
+        SerializedProperty m_FSR2ReactiveThreshold;
+        SerializedProperty m_FSR2ReactiveBinaryValue;
+        SerializedProperty m_FSR2ReactiveFlags;
+        SerializedProperty m_FSR2ReactiveMaskTexture;
+        SerializedProperty m_FSR2AutoTextureUpdate;
 
-        SerializedProperty m_FSRFallBack;
-        SerializedProperty m_FSRAntiGhosting;
+        SerializedProperty m_FSR2UpdateFrequency;
+        SerializedProperty m_FSR2MipmapBiasOverride;
+
+        SerializedProperty m_FSR2AutoTcr;
+        SerializedProperty m_FSR2AutoTcrParams;
+        SerializedProperty m_FSR2TcrMaskTexture;
+
+        SerializedProperty m_FSR2FallBack;
+        SerializedProperty m_FSR2AntiGhosting;
 
         //DLSS
         SerializedProperty m_DLSSQualityMode;
         SerializedProperty m_DLSSFallBack;
 
+        SerializedProperty m_DLSSAutoTextureUpdate;
+        SerializedProperty m_DLSSUpdateFrequency;
+        SerializedProperty m_DLSSMipmapBiasOverride;
 
 
-        SerializedProperty m_AutoTextureUpdate;
-        SerializedProperty m_UpdateFrequency;
-        SerializedProperty m_MipmapBiasOverride;
+
         SerializedProperty m_DLSSAntiGhosting;
 
         SerializedProperty m_FogEnabled;
@@ -81,6 +95,7 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
             new GUIContent("FidelityFX Super Resolution 2 (FSR2)"),
             new GUIContent("Deep Learning Super Sampling (DLSS)")
         };
@@ -91,16 +106,27 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
             new GUIContent("FidelityFX Super Resolution 2 (FSR2)"),
         };
 
-        static GUIContent[] s_AntialiasingFSRFallBackMethodNames =
+        static GUIContent[] s_AntialiasingFSR2FallBackMethodNames =
+{
+            new GUIContent("No Anti-aliasing"),
+            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
+            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
+            new GUIContent("Temporal Anti-aliasing (TAA)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
+        };
+
+        static GUIContent[] s_AntialiasingFSR1FallBackMethodNames =
 {
             new GUIContent("No Anti-aliasing"),
             new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
         };
+
         enum ExportMode
         {
             FullFrame,
@@ -109,7 +135,8 @@ namespace UnityEditor.Rendering.PostProcessing
             BreakBeforeColorGradingLog
         }
 
-        void OnEnable() {
+        void OnEnable()
+        {
             m_StopNaNPropagation = FindProperty(x => x.stopNaNPropagation);
             m_DirectToCameraTarget = FindProperty(x => x.finalBlitToCameraTarget);
             m_VolumeTrigger = FindProperty(x => x.volumeTrigger);
@@ -123,44 +150,54 @@ namespace UnityEditor.Rendering.PostProcessing
             m_SmaaQuality = FindProperty(x => x.subpixelMorphologicalAntialiasing.quality);
             m_FxaaFastMode = FindProperty(x => x.fastApproximateAntialiasing.fastMode);
             m_FxaaKeepAlpha = FindProperty(x => x.fastApproximateAntialiasing.keepAlpha);
+#if AEG_FSR1
+            m_FSR1QualityMode = FindProperty(x => x.fsr1.qualityMode);
+            m_FSR1PerformSharpen = FindProperty(x => x.fsr1.Sharpening);
+            m_FSR1Sharpness = FindProperty(x => x.fsr1.sharpness);
+
+            m_FSR1AutoTextureUpdate = FindProperty(x => x.fsr1.AutoTextureUpdate);
+            m_FSR1UpdateFrequency = FindProperty(x => x.fsr1.UpdateFrequency);
+            m_FSR1MipmapBiasOverride = FindProperty(x => x.fsr1.MipmapBiasOverride);
+#endif
 #if AEG_FSR2
-            m_FsrQualityMode = FindProperty(x => x.fsr2.qualityMode);
-            m_FsrPerformSharpen = FindProperty(x => x.fsr2.Sharpening);
-            m_FsrSharpness = FindProperty(x => x.fsr2.sharpness);
+            m_FSR2QualityMode = FindProperty(x => x.fsr2.qualityMode);
+            m_FSR2PerformSharpen = FindProperty(x => x.fsr2.Sharpening);
+            m_FSR2Sharpness = FindProperty(x => x.fsr2.sharpness);
 
-            m_FsrEnableFP16 = FindProperty(x => x.fsr2.enableFP16);
-            m_FsrExposureSource = FindProperty(x => x.fsr2.exposureSource);
-            m_FsrExposureTexture = FindProperty(x => x.fsr2.exposure);
-            m_FsrPreExposure = FindProperty(x => x.fsr2.preExposure);
-            m_FsrAutoReactive = FindProperty(x => x.fsr2.autoGenerateReactiveMask);
+            m_FSR2EnableFP16 = FindProperty(x => x.fsr2.enableFP16);
+            m_FSR2ExposureSource = FindProperty(x => x.fsr2.exposureSource);
+            m_FSR2ExposureTexture = FindProperty(x => x.fsr2.exposure);
+            m_FSR2PreExposure = FindProperty(x => x.fsr2.preExposure);
+            m_FSR2AutoReactive = FindProperty(x => x.fsr2.autoGenerateReactiveMask);
 
-            m_FsrReactiveScale = FindProperty(x => x.fsr2.ReactiveScale);
-            m_FsrReactiveThreshold = FindProperty(x => x.fsr2.ReactiveThreshold);
-            m_FsrReactiveBinaryValue = FindProperty(x => x.fsr2.ReactiveBinaryValue);
-            m_FsrReactiveFlags = FindProperty(x => x.fsr2.flags);
+            m_FSR2ReactiveScale = FindProperty(x => x.fsr2.ReactiveScale);
+            m_FSR2ReactiveThreshold = FindProperty(x => x.fsr2.ReactiveThreshold);
+            m_FSR2ReactiveBinaryValue = FindProperty(x => x.fsr2.ReactiveBinaryValue);
+            m_FSR2ReactiveFlags = FindProperty(x => x.fsr2.flags);
 
-            m_FsrReactiveMaskTexture = FindProperty(x => x.fsr2.reactiveMask);
+            m_FSR2ReactiveMaskTexture = FindProperty(x => x.fsr2.reactiveMask);
 
-            m_FsrAutoTcr = FindProperty(x => x.fsr2.autoGenerateTransparencyAndComposition);
-            m_FsrAutoTcrParams = FindProperty(x => x.fsr2.generateTransparencyAndCompositionParameters);
-            m_FsrTcrMaskTexture = FindProperty(x => x.fsr2.transparencyAndCompositionMask);
+            m_FSR2AutoTcr = FindProperty(x => x.fsr2.autoGenerateTransparencyAndComposition);
+            m_FSR2AutoTcrParams = FindProperty(x => x.fsr2.generateTransparencyAndCompositionParameters);
+            m_FSR2TcrMaskTexture = FindProperty(x => x.fsr2.transparencyAndCompositionMask);
 
-            m_AutoTextureUpdate = FindProperty(x => x.fsr2.AutoTextureUpdate);
-            m_UpdateFrequency = FindProperty(x => x.fsr2.UpdateFrequency);
-            m_MipmapBiasOverride = FindProperty(x => x.fsr2.MipmapBiasOverride);
+            m_FSR2AutoTextureUpdate = FindProperty(x => x.fsr2.AutoTextureUpdate);
+            m_FSR2UpdateFrequency = FindProperty(x => x.fsr2.UpdateFrequency);
+            m_FSR2MipmapBiasOverride = FindProperty(x => x.fsr2.MipmapBiasOverride);
 
-            m_FSRAntiGhosting = FindProperty(x => x.fsr2.antiGhosting);
-          
+            m_FSR2AntiGhosting = FindProperty(x => x.fsr2.antiGhosting);
+
 #endif
 #if AEG_DLSS
             m_DLSSQualityMode = FindProperty(x => x.dlss.qualityMode);
             m_DLSSAntiGhosting = FindProperty(x => x.dlss.antiGhosting);
 
-            m_AutoTextureUpdate = FindProperty(x => x.dlss.AutoTextureUpdate);
-            m_UpdateFrequency = FindProperty(x => x.dlss.UpdateFrequency);
-            m_MipmapBiasOverride = FindProperty(x => x.dlss.MipmapBiasOverride);
+            m_DLSSAutoTextureUpdate = FindProperty(x => x.dlss.AutoTextureUpdate);
+            m_DLSSUpdateFrequency = FindProperty(x => x.dlss.UpdateFrequency);
+            m_DLSSMipmapBiasOverride = FindProperty(x => x.dlss.MipmapBiasOverride);
 #endif
-            m_FSRFallBack = FindProperty(x => x.fsr2.fallBackAA);
+            m_FSR1FallBack = FindProperty(x => x.fsr1.fallBackAA);
+            m_FSR2FallBack = FindProperty(x => x.fsr2.fallBackAA);
             m_DLSSFallBack = FindProperty(x => x.dlss.fallBackAA);
 
             m_FogEnabled = FindProperty(x => x.fog.enabled);
@@ -174,11 +211,13 @@ namespace UnityEditor.Rendering.PostProcessing
 #endif
         }
 
-        void OnDisable() {
+        void OnDisable()
+        {
             m_CustomLists = null;
         }
 
-        public override void OnInspectorGUI() {
+        public override void OnInspectorGUI()
+        {
             serializedObject.Update();
 
             var camera = m_Target.GetComponent<Camera>();
@@ -190,7 +229,7 @@ namespace UnityEditor.Rendering.PostProcessing
             EditorGUILayout.PropertyField(m_StopNaNPropagation, EditorUtilities.GetContent("Stop NaN Propagation|Automatically replaces NaN/Inf in shaders by a black pixel to avoid breaking some effects. This will slightly affect performances and should only be used if you experience NaN issues that you can't fix. Has no effect on GLES2 platforms."));
 
 #if UNITY_2019_1_OR_NEWER
-            if(!RuntimeUtilities.scriptableRenderPipelineActive)
+            if (!RuntimeUtilities.scriptableRenderPipelineActive)
                 EditorGUILayout.PropertyField(m_DirectToCameraTarget, EditorUtilities.GetContent("Directly to Camera Target|Use the final blit to the camera render target for postprocessing. This has less overhead but breaks compatibility with legacy image effect that use OnRenderImage."));
 #endif
 
@@ -205,7 +244,8 @@ namespace UnityEditor.Rendering.PostProcessing
             serializedObject.ApplyModifiedProperties();
         }
 
-        void DoVolumeBlending() {
+        void DoVolumeBlending()
+        {
             EditorGUILayout.LabelField(EditorUtilities.GetContent("Volume blending"), EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             {
@@ -219,18 +259,18 @@ namespace UnityEditor.Rendering.PostProcessing
 
                 EditorGUI.PrefixLabel(labelRect, EditorUtilities.GetContent("Trigger|A transform that will act as a trigger for volume blending."));
                 m_VolumeTrigger.objectReferenceValue = (Transform)EditorGUI.ObjectField(fieldRect, m_VolumeTrigger.objectReferenceValue, typeof(Transform), true);
-                if(GUI.Button(buttonRect, EditorUtilities.GetContent("This|Assigns the current GameObject as a trigger."), EditorStyles.miniButton))
+                if (GUI.Button(buttonRect, EditorUtilities.GetContent("This|Assigns the current GameObject as a trigger."), EditorStyles.miniButton))
                     m_VolumeTrigger.objectReferenceValue = m_Target.transform;
 
-                if(m_VolumeTrigger.objectReferenceValue == null)
+                if (m_VolumeTrigger.objectReferenceValue == null)
                     EditorGUILayout.HelpBox("No trigger has been set, the camera will only be affected by global volumes.", MessageType.Info);
 
                 EditorGUILayout.PropertyField(m_VolumeLayer, EditorUtilities.GetContent("Layer|This camera will only be affected by volumes in the selected scene-layers."));
 
                 int mask = m_VolumeLayer.intValue;
-                if(mask == 0)
+                if (mask == 0)
                     EditorGUILayout.HelpBox("No layer has been set, the trigger will never be affected by volumes.", MessageType.Warning);
-                else if(mask == -1 || ((mask & 1) != 0))
+                else if (mask == -1 || ((mask & 1) != 0))
                     EditorGUILayout.HelpBox("Do not use \"Everything\" or \"Default\" as a layer mask as it will slow down the volume blending process! Put post-processing volumes in their own dedicated layer for best performances.", MessageType.Warning);
             }
             EditorGUI.indentLevel--;
@@ -238,19 +278,21 @@ namespace UnityEditor.Rendering.PostProcessing
             EditorGUILayout.Space();
         }
 
-        void DoAntialiasing() {
+        void DoAntialiasing()
+        {
             EditorGUILayout.LabelField(EditorUtilities.GetContent("Anti-aliasing"), EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             {
                 m_AntialiasingMode.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Mode|The anti-aliasing method to use. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_AntialiasingMode.intValue, s_AntialiasingMethodNames);
 
-                if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.TemporalAntialiasing) {
+                if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.TemporalAntialiasing)
+                {
 #if !UNITY_2017_3_OR_NEWER
                     if(RuntimeUtilities.isSinglePassStereoSelected)
                         EditorGUILayout.HelpBox("TAA requires Unity 2017.3+ for Single-pass stereo rendering support.", MessageType.Warning);
 #endif
 #if UNITY_2017_3_OR_NEWER
-                    if(m_TargetCameraComponent != null && RuntimeUtilities.IsDynamicResolutionEnabled(m_TargetCameraComponent))
+                    if (m_TargetCameraComponent != null && RuntimeUtilities.IsDynamicResolutionEnabled(m_TargetCameraComponent))
                         EditorGUILayout.HelpBox("TAA is not supported with Dynamic Resolution.", MessageType.Warning);
 #endif
 
@@ -258,66 +300,118 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.PropertyField(m_TaaStationaryBlending);
                     EditorGUILayout.PropertyField(m_TaaMotionBlending);
                     EditorGUILayout.PropertyField(m_TaaSharpness);
-                } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing) {
-                    if(RuntimeUtilities.isSinglePassStereoSelected)
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing)
+                {
+                    if (RuntimeUtilities.isSinglePassStereoSelected)
                         EditorGUILayout.HelpBox("SMAA doesn't work with Single-pass stereo rendering.", MessageType.Warning);
 
                     EditorGUILayout.PropertyField(m_SmaaQuality);
 
-                    if(m_SmaaQuality.intValue != (int)SubpixelMorphologicalAntialiasing.Quality.Low && EditorUtilities.isTargetingConsolesOrMobiles)
+                    if (m_SmaaQuality.intValue != (int)SubpixelMorphologicalAntialiasing.Quality.Low && EditorUtilities.isTargetingConsolesOrMobiles)
                         EditorGUILayout.HelpBox("For performance reasons it is recommended to use Low Quality on mobile and console platforms.", MessageType.Warning);
-                } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FastApproximateAntialiasing) {
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FastApproximateAntialiasing)
+                {
                     EditorGUILayout.PropertyField(m_FxaaFastMode);
                     EditorGUILayout.PropertyField(m_FxaaKeepAlpha);
 
-                    if(!m_FxaaFastMode.boolValue && EditorUtilities.isTargetingConsolesOrMobiles)
+                    if (!m_FxaaFastMode.boolValue && EditorUtilities.isTargetingConsolesOrMobiles)
                         EditorGUILayout.HelpBox("For performance reasons it is recommended to use Fast Mode on mobile and console platforms.", MessageType.Warning);
-                } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR2) {
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR1)
+                {
                     EditorGUI.indentLevel++;
-                    m_FSRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 2 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSRFallBack.intValue, s_AntialiasingFSRFallBackMethodNames);
+                    m_FSR1FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 2 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR1FallBack.intValue, s_AntialiasingFSR1FallBackMethodNames);
+                    EditorGUI.indentLevel--;
+#if AEG_FSR1
+                    EditorGUILayout.PropertyField(m_FSR1QualityMode);
+                    EditorGUILayout.PropertyField(m_FSR1PerformSharpen);
+                    if (m_FSR1PerformSharpen.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_FSR1Sharpness);
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUILayout.PropertyField(m_FSR1AutoTextureUpdate);
+                    if (m_FSR1AutoTextureUpdate.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_FSR1UpdateFrequency);
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.PropertyField(m_FSR1MipmapBiasOverride);
+
+#if !UNITY_2017_3_OR_NEWER
+                    if(RuntimeUtilities.isSinglePassStereoSelected)
+                        EditorGUILayout.HelpBox("TAA requires Unity 2017.3+ for Single-pass stereo rendering support.", MessageType.Warning);
+#endif
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField(EditorUtilities.GetContent("Unity TAA Settings."), EditorStyles.boldLabel);
+
+                    EditorGUILayout.PropertyField(m_TaaJitterSpread);
+                    EditorGUILayout.PropertyField(m_TaaStationaryBlending);
+                    EditorGUILayout.PropertyField(m_TaaMotionBlending);
+                    EditorGUILayout.PropertyField(m_TaaSharpness);
+#else
+                    EditorGUILayout.LabelField(EditorUtilities.GetContent("----- FSR 1 Package not loaded ------"), EditorStyles.boldLabel);
+#endif
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR2)
+                {
+                    EditorGUI.indentLevel++;
+                    m_FSR2FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 2 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR2FallBack.intValue, s_AntialiasingFSR2FallBackMethodNames);
                     EditorGUI.indentLevel--;
 
 #if AEG_FSR2
-                    EditorGUILayout.PropertyField(m_FsrQualityMode);
-                    EditorGUILayout.PropertyField(m_FSRAntiGhosting);
-                    EditorGUILayout.PropertyField(m_FsrPerformSharpen);
-                    if(m_FsrPerformSharpen.boolValue) {
+                    EditorGUILayout.PropertyField(m_FSR2QualityMode);
+                    EditorGUILayout.PropertyField(m_FSR2AntiGhosting);
+                    EditorGUILayout.PropertyField(m_FSR2PerformSharpen);
+                    if (m_FSR2PerformSharpen.boolValue)
+                    {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(m_FsrSharpness);
+                        EditorGUILayout.PropertyField(m_FSR2Sharpness);
                         EditorGUI.indentLevel--;
                     }
-                    EditorGUILayout.PropertyField(m_FsrAutoReactive);
-                    if(m_FsrAutoReactive.boolValue) {
+                    EditorGUILayout.PropertyField(m_FSR2AutoReactive);
+                    if (m_FSR2AutoReactive.boolValue)
+                    {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(m_FsrReactiveScale);
-                        EditorGUILayout.PropertyField(m_FsrReactiveThreshold);
-                        EditorGUILayout.PropertyField(m_FsrReactiveBinaryValue);
-                        EditorGUILayout.PropertyField(m_FsrReactiveFlags);
+                        EditorGUILayout.PropertyField(m_FSR2ReactiveScale);
+                        EditorGUILayout.PropertyField(m_FSR2ReactiveThreshold);
+                        EditorGUILayout.PropertyField(m_FSR2ReactiveBinaryValue);
+                        EditorGUILayout.PropertyField(m_FSR2ReactiveFlags);
                         EditorGUI.indentLevel--;
                     }
 
-                    EditorGUILayout.PropertyField(m_AutoTextureUpdate);
-                    if(m_AutoTextureUpdate.boolValue) {
+                    EditorGUILayout.PropertyField(m_FSR2AutoTextureUpdate);
+                    if (m_FSR2AutoTextureUpdate.boolValue)
+                    {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(m_UpdateFrequency);
+                        EditorGUILayout.PropertyField(m_FSR2UpdateFrequency);
                         EditorGUI.indentLevel--;
                     }
-                    EditorGUILayout.PropertyField(m_MipmapBiasOverride);
+                    EditorGUILayout.PropertyField(m_FSR2MipmapBiasOverride);
 #else
                     EditorGUILayout.LabelField(EditorUtilities.GetContent("----- FSR 2 Package not loaded ------"), EditorStyles.boldLabel);
 #endif
 
-                } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.DLSS) {
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.DLSS)
+                {
 #if !UNITY_STANDALONE_WIN || !UNITY_64
                     EditorGUILayout.LabelField("----- DLSS is not supported on this platform ------", EditorStyles.boldLabel);
 #endif
                     EditorGUI.indentLevel++;
-                    m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 2 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingDLSSFallBackMethodNames);
+                    m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 2 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingDLSSFallBackMethodNames);
                     EditorGUI.indentLevel--;
 
 #if !DLSS_INSTALLED
                     EditorGUILayout.LabelField(EditorUtilities.GetContent("----- Missing NVIDIA DLSS Package ------"), EditorStyles.boldLabel);
-                    if(GUILayout.Button("Install Package")) {
+                    if (GUILayout.Button("Install Package"))
+                    {
                         UnityEditor.PackageManager.Client.Add("com.unity.modules.nvidia");
                         AddDefine("DLSS_INSTALLED");
                         AssetDatabase.Refresh();
@@ -328,13 +422,13 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.PropertyField(m_DLSSQualityMode);
                     EditorGUILayout.PropertyField(m_DLSSAntiGhosting);
 
-                    EditorGUILayout.PropertyField(m_AutoTextureUpdate);
-                    if(m_AutoTextureUpdate.boolValue) {
+                    EditorGUILayout.PropertyField(m_DLSSAutoTextureUpdate);
+                    if(m_DLSSAutoTextureUpdate.boolValue) {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(m_UpdateFrequency);
+                        EditorGUILayout.PropertyField(m_DLSSUpdateFrequency);
                         EditorGUI.indentLevel--;
                     }
-                    EditorGUILayout.PropertyField(m_MipmapBiasOverride);
+                    EditorGUILayout.PropertyField(m_DLSSMipmapBiasOverride);
 #else
                     EditorGUILayout.LabelField(EditorUtilities.GetContent("----- DLSS Package not loaded ------"), EditorStyles.boldLabel);
 #endif
@@ -346,38 +440,45 @@ namespace UnityEditor.Rendering.PostProcessing
             EditorGUILayout.Space();
         }
 
-        void AddDefine(string define) {
+        void AddDefine(string define)
+        {
             var definesList = GetDefines();
-            if(!definesList.Contains(define)) {
+            if (!definesList.Contains(define))
+            {
                 definesList.Add(define);
                 SetDefines(definesList);
             }
         }
 
-        void RemoveDefine(string define) {
+        void RemoveDefine(string define)
+        {
             var definesList = GetDefines();
-            if(definesList.Contains(define)) {
+            if (definesList.Contains(define))
+            {
                 definesList.Remove(define);
                 SetDefines(definesList);
             }
         }
 
-        List<string> GetDefines() {
+        List<string> GetDefines()
+        {
             var target = EditorUserBuildSettings.activeBuildTarget;
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
             var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
             return defines.Split(';').ToList();
         }
 
-        void SetDefines(List<string> definesList) {
+        void SetDefines(List<string> definesList)
+        {
             var target = EditorUserBuildSettings.activeBuildTarget;
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
             var defines = string.Join(";", definesList.ToArray());
             PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, defines);
         }
 
-        void DoFog(Camera camera) {
-            if(camera == null || camera.actualRenderingPath != RenderingPath.DeferredShading)
+        void DoFog(Camera camera)
+        {
+            if (camera == null || camera.actualRenderingPath != RenderingPath.DeferredShading)
                 return;
 
             EditorGUILayout.LabelField(EditorUtilities.GetContent("Deferred Fog"), EditorStyles.boldLabel);
@@ -385,7 +486,8 @@ namespace UnityEditor.Rendering.PostProcessing
             {
                 EditorGUILayout.PropertyField(m_FogEnabled);
 
-                if(m_FogEnabled.boolValue) {
+                if (m_FogEnabled.boolValue)
+                {
                     EditorGUILayout.PropertyField(m_FogExcludeSkybox);
                     EditorGUILayout.HelpBox("This adds fog compatibility to the deferred rendering path; actual fog settings should be set in the Lighting panel.", MessageType.Info);
                 }
@@ -395,14 +497,17 @@ namespace UnityEditor.Rendering.PostProcessing
             EditorGUILayout.Space();
         }
 
-        void DoToolkit() {
+        void DoToolkit()
+        {
             EditorUtilities.DrawSplitter();
             m_ShowToolkit.boolValue = EditorUtilities.DrawHeader("Toolkit", m_ShowToolkit.boolValue);
 
-            if(m_ShowToolkit.boolValue) {
+            if (m_ShowToolkit.boolValue)
+            {
                 GUILayout.Space(2);
 
-                if(GUILayout.Button(EditorUtilities.GetContent("Export frame to EXR..."), EditorStyles.miniButton)) {
+                if (GUILayout.Button(EditorUtilities.GetContent("Export frame to EXR..."), EditorStyles.miniButton))
+                {
                     var menu = new GenericMenu();
                     menu.AddItem(EditorUtilities.GetContent("Full Frame (as displayed)"), false, () => ExportFrameToExr(ExportMode.FullFrame));
                     menu.AddItem(EditorUtilities.GetContent("Disable post-processing"), false, () => ExportFrameToExr(ExportMode.DisablePost));
@@ -411,22 +516,25 @@ namespace UnityEditor.Rendering.PostProcessing
                     menu.ShowAsContext();
                 }
 
-                if(GUILayout.Button(EditorUtilities.GetContent("Select all layer volumes|Selects all the volumes that will influence this layer."), EditorStyles.miniButton)) {
+                if (GUILayout.Button(EditorUtilities.GetContent("Select all layer volumes|Selects all the volumes that will influence this layer."), EditorStyles.miniButton))
+                {
                     var volumes = RuntimeUtilities.GetAllSceneObjects<PostProcessVolume>()
                         .Where(x => (m_VolumeLayer.intValue & (1 << x.gameObject.layer)) != 0)
                         .Select(x => x.gameObject)
                         .Cast<UnityEngine.Object>()
                         .ToArray();
 
-                    if(volumes.Length > 0)
+                    if (volumes.Length > 0)
                         Selection.objects = volumes;
                 }
 
-                if(GUILayout.Button(EditorUtilities.GetContent("Select all active volumes|Selects all volumes currently affecting the layer."), EditorStyles.miniButton)) {
+                if (GUILayout.Button(EditorUtilities.GetContent("Select all active volumes|Selects all volumes currently affecting the layer."), EditorStyles.miniButton))
+                {
                     var volumes = new List<PostProcessVolume>();
                     PostProcessManager.instance.GetActiveVolumes(m_Target, volumes);
 
-                    if(volumes.Count > 0) {
+                    if (volumes.Count > 0)
+                    {
                         Selection.objects = volumes
                             .Select(x => x.gameObject)
                             .Cast<UnityEngine.Object>()
@@ -438,45 +546,56 @@ namespace UnityEditor.Rendering.PostProcessing
             }
         }
 
-        void DoCustomEffectSorter() {
+        void DoCustomEffectSorter()
+        {
             EditorUtilities.DrawSplitter();
             m_ShowCustomSorter.boolValue = EditorUtilities.DrawHeader("Custom Effect Sorting", m_ShowCustomSorter.boolValue);
 
-            if(m_ShowCustomSorter.boolValue) {
+            if (m_ShowCustomSorter.boolValue)
+            {
                 bool isInPrefab = false;
 
                 // Init lists if needed
-                if(m_CustomLists == null) {
+                if (m_CustomLists == null)
+                {
                     // In some cases the editor will refresh before components which means
                     // components might not have been fully initialized yet. In this case we also
                     // need to make sure that we're not in a prefab as sorteBundles isn't a
                     // serializable object and won't exist until put on a scene.
-                    if(m_Target.sortedBundles == null) {
+                    if (m_Target.sortedBundles == null)
+                    {
                         isInPrefab = string.IsNullOrEmpty(m_Target.gameObject.scene.name);
 
-                        if(!isInPrefab) {
+                        if (!isInPrefab)
+                        {
                             // sortedBundles will be initialized and ready to use on the next frame
                             Repaint();
                         }
-                    } else {
+                    }
+                    else
+                    {
                         // Create a reorderable list for each injection event
                         m_CustomLists = new Dictionary<PostProcessEvent, ReorderableList>();
-                        foreach(var evt in Enum.GetValues(typeof(PostProcessEvent)).Cast<PostProcessEvent>()) {
+                        foreach (var evt in Enum.GetValues(typeof(PostProcessEvent)).Cast<PostProcessEvent>())
+                        {
                             var bundles = m_Target.sortedBundles[evt];
                             var listName = ObjectNames.NicifyVariableName(evt.ToString());
 
                             var list = new ReorderableList(bundles, typeof(SerializedBundleRef), true, true, false, false);
 
-                            list.drawHeaderCallback = (rect) => {
+                            list.drawHeaderCallback = (rect) =>
+                            {
                                 EditorGUI.LabelField(rect, listName);
                             };
 
-                            list.drawElementCallback = (rect, index, isActive, isFocused) => {
+                            list.drawElementCallback = (rect, index, isActive, isFocused) =>
+                            {
                                 var sbr = (SerializedBundleRef)list.list[index];
                                 EditorGUI.LabelField(rect, sbr.bundle.attribute.menuItem);
                             };
 
-                            list.onReorderCallback = (l) => {
+                            list.onReorderCallback = (l) =>
+                            {
                                 EditorUtility.SetDirty(m_Target);
                             };
 
@@ -487,19 +606,22 @@ namespace UnityEditor.Rendering.PostProcessing
 
                 GUILayout.Space(5);
 
-                if(isInPrefab) {
+                if (isInPrefab)
+                {
                     EditorGUILayout.HelpBox("Not supported in prefabs.", MessageType.Info);
                     GUILayout.Space(3);
                     return;
                 }
 
                 bool anyList = false;
-                if(m_CustomLists != null) {
-                    foreach(var kvp in m_CustomLists) {
+                if (m_CustomLists != null)
+                {
+                    foreach (var kvp in m_CustomLists)
+                    {
                         var list = kvp.Value;
 
                         // Skip empty lists to avoid polluting the inspector
-                        if(list.count == 0)
+                        if (list.count == 0)
                             continue;
 
                         list.DoLayoutList();
@@ -507,17 +629,19 @@ namespace UnityEditor.Rendering.PostProcessing
                     }
                 }
 
-                if(!anyList) {
+                if (!anyList)
+                {
                     EditorGUILayout.HelpBox("No custom effect loaded.", MessageType.Info);
                     GUILayout.Space(3);
                 }
             }
         }
 
-        void ExportFrameToExr(ExportMode mode) {
+        void ExportFrameToExr(ExportMode mode)
+        {
             string path = EditorUtility.SaveFilePanel("Export EXR...", "", "Frame", "exr");
 
-            if(string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path))
                 return;
 
             EditorUtility.DisplayProgressBar("Export EXR", "Rendering...", 0f);
@@ -534,9 +658,9 @@ namespace UnityEditor.Rendering.PostProcessing
             var lastPostFXState = m_Target.enabled;
             var lastBreakColorGradingState = m_Target.breakBeforeColorGrading;
 
-            if(mode == ExportMode.DisablePost)
+            if (mode == ExportMode.DisablePost)
                 m_Target.enabled = false;
-            else if(mode == ExportMode.BreakBeforeColorGradingLinear || mode == ExportMode.BreakBeforeColorGradingLog)
+            else if (mode == ExportMode.BreakBeforeColorGradingLinear || mode == ExportMode.BreakBeforeColorGradingLog)
                 m_Target.breakBeforeColorGrading = true;
 
             camera.targetTexture = target;
@@ -548,7 +672,8 @@ namespace UnityEditor.Rendering.PostProcessing
             m_Target.enabled = lastPostFXState;
             m_Target.breakBeforeColorGrading = lastBreakColorGradingState;
 
-            if(mode == ExportMode.BreakBeforeColorGradingLog) {
+            if (mode == ExportMode.BreakBeforeColorGradingLog)
+            {
                 // Convert to log
                 var material = new Material(Shader.Find("Hidden/PostProcessing/Editor/ConvertToLog"));
                 var newTarget = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);

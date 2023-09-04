@@ -30,36 +30,38 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_Camera = value;
 
 #if !UNITY_SWITCH && (ENABLE_VR_MODULE && ENABLE_VR)
-                if(m_Camera.stereoEnabled) {
+                if (m_Camera.stereoEnabled)
+                {
                     var xrDesc = XRSettings.eyeTextureDesc;
                     stereoRenderingMode = StereoRenderingMode.SinglePass;
                     numberOfEyes = 1;
 
 #if UNITY_2018_3_OR_NEWER
-                    if(XRSettings.stereoRenderingMode == XRSettings.StereoRenderingMode.MultiPass)
+                    if (XRSettings.stereoRenderingMode == XRSettings.StereoRenderingMode.MultiPass)
                         stereoRenderingMode = StereoRenderingMode.MultiPass;
 #endif
 
 #if UNITY_STANDALONE || UNITY_EDITOR || UNITY_PS4 || UNITY_PS5
-                    if(xrDesc.dimension == TextureDimension.Tex2DArray)
+                    if (xrDesc.dimension == TextureDimension.Tex2DArray)
                         stereoRenderingMode = StereoRenderingMode.SinglePassInstanced;
 #endif
-                    if(stereoRenderingMode == StereoRenderingMode.SinglePassInstanced)
+                    if (stereoRenderingMode == StereoRenderingMode.SinglePassInstanced)
                         numberOfEyes = 2;
 
                     width = xrDesc.width;
                     height = xrDesc.height;
                     m_sourceDescriptor = xrDesc;
 
-                    if(m_Camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+                    if (m_Camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
                         xrActiveEye = (int)Camera.StereoscopicEye.Right;
 
                     screenWidth = XRSettings.eyeTextureWidth;
                     screenHeight = XRSettings.eyeTextureHeight;
                     stereoActive = true;
-                } else
+                }
+                else
 #endif
-                  {
+                {
                     width = m_Camera.pixelWidth;
                     height = m_Camera.pixelHeight;
                     m_sourceDescriptor.width = width;
@@ -72,7 +74,8 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        public void SetRenderSize(Vector2Int renderSize) {
+        public void SetRenderSize(Vector2Int renderSize)
+        {
             // TODO: I suppose we should support XR as well at some point
             width = renderSize.x;
             height = renderSize.y;
@@ -276,9 +279,17 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         /// <summary>
+        /// A reference to the FSR1 settings for the rendering layer.
+        /// </summary>
+        public FSR1 superResolution1
+        {
+            get; internal set;
+        }
+
+        /// <summary>
         /// A reference to the FSR2 settings for the rendering layer.
         /// </summary>
-        public FSR2 superResolution
+        public FSR2 superResolution2
         {
             get; internal set;
         }
@@ -308,7 +319,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// frame and allows re-using the same context object between frames without having to
         /// recreate a new one.
         /// </summary>
-        public void Reset() {
+        public void Reset()
+        {
             m_Camera = null;
             width = 0;
             height = 0;
@@ -340,7 +352,7 @@ namespace UnityEngine.Rendering.PostProcessing
             autoExposure = null;
             bloomBufferNameID = -1;
 
-            if(userData == null)
+            if (userData == null)
                 userData = new Dictionary<string, object>();
 
             userData.Clear();
@@ -351,12 +363,25 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         /// <returns><c>true</c> if temporal anti-aliasing is supported and enabled, <c>false</c>
         /// otherwise</returns>
-        public bool IsTemporalAntialiasingActive() {
-            return antialiasing == PostProcessLayer.Antialiasing.TemporalAntialiasing
+        public bool IsTemporalAntialiasingActive()
+        {
+            return antialiasing == PostProcessLayer.Antialiasing.TemporalAntialiasing || antialiasing == PostProcessLayer.Antialiasing.FSR1
                 && !isSceneView;
         }
 
-        public bool IsFSR2Active() {
+        public bool IsFSR1Active()
+        {
+#if AEG_FSR1
+            return antialiasing == PostProcessLayer.Antialiasing.FSR1
+               && Application.isPlaying
+               && !isSceneView;
+#else
+            return false;
+#endif
+        }
+
+        public bool IsFSR2Active()
+        {
 #if AEG_FSR2
             return antialiasing == PostProcessLayer.Antialiasing.FSR2
                && Application.isPlaying
@@ -366,7 +391,8 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
         }
 
-        public bool IsDLSSActive() {
+        public bool IsDLSSActive()
+        {
 #if AEG_DLSS
             return antialiasing == PostProcessLayer.Antialiasing.DLSS
                && Application.isPlaying
@@ -383,7 +409,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="overlay">The debug overlay to look for</param>
         /// <returns><c>true</c> if the specified debug overlay is enable, <c>false</c>
         /// otherwise</returns>
-        public bool IsDebugOverlayEnabled(DebugOverlay overlay) {
+        public bool IsDebugOverlayEnabled(DebugOverlay overlay)
+        {
             return debugLayer.debugOverlay == overlay;
         }
 
@@ -396,14 +423,16 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="sheet">The property sheet to use for the blit</param>
         /// <param name="pass">The pass to use for the property sheet</param>
         /// <seealso cref="PostProcessDebugLayer.PushDebugOverlay"/>
-        public void PushDebugOverlay(CommandBuffer cmd, RenderTargetIdentifier source, PropertySheet sheet, int pass) {
+        public void PushDebugOverlay(CommandBuffer cmd, RenderTargetIdentifier source, PropertySheet sheet, int pass)
+        {
             debugLayer.PushDebugOverlay(cmd, source, sheet, pass);
         }
 
         // TODO: Change w/h name to texture w/h in order to make
         // size usages explicit
         RenderTextureDescriptor m_sourceDescriptor;
-        internal RenderTextureDescriptor GetDescriptor(int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default) {
+        internal RenderTextureDescriptor GetDescriptor(int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default)
+        {
             var modifiedDesc = new RenderTextureDescriptor(m_sourceDescriptor.width, m_sourceDescriptor.height,
                 m_sourceDescriptor.colorFormat, depthBufferBits);
             modifiedDesc.dimension = m_sourceDescriptor.dimension;
@@ -418,19 +447,19 @@ namespace UnityEngine.Rendering.PostProcessing
             modifiedDesc.shadowSamplingMode = m_sourceDescriptor.shadowSamplingMode;
 
 #if UNITY_2019_1_OR_NEWER
-            if(RuntimeUtilities.IsDynamicResolutionEnabled(m_Camera))
+            if (RuntimeUtilities.IsDynamicResolutionEnabled(m_Camera))
                 modifiedDesc.useDynamicScale = true;
 #endif
 
-            if(colorFormat != RenderTextureFormat.Default)
+            if (colorFormat != RenderTextureFormat.Default)
                 modifiedDesc.colorFormat = colorFormat;
 
 #if UNITY_2019_1_OR_NEWER
-            if(readWrite == RenderTextureReadWrite.sRGB)
+            if (readWrite == RenderTextureReadWrite.sRGB)
                 modifiedDesc.sRGB = true;
-            else if(readWrite == RenderTextureReadWrite.Linear)
+            else if (readWrite == RenderTextureReadWrite.Linear)
                 modifiedDesc.sRGB = false;
-            else if(readWrite == RenderTextureReadWrite.Default)
+            else if (readWrite == RenderTextureReadWrite.Default)
                 modifiedDesc.sRGB = QualitySettings.activeColorSpace != ColorSpace.Gamma;
 #else
             modifiedDesc.sRGB = readWrite != RenderTextureReadWrite.Linear;
@@ -453,18 +482,20 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="isUpscaleOutput">Enable random access write into this render texture and disable dynamic scaling</param>
         public void GetScreenSpaceTemporaryRT(CommandBuffer cmd, int nameID,
             int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default,
-            FilterMode filter = FilterMode.Bilinear, int widthOverride = 0, int heightOverride = 0, bool isUpscaleOutput = false) {
+            FilterMode filter = FilterMode.Bilinear, int widthOverride = 0, int heightOverride = 0, bool isUpscaleOutput = false)
+        {
             var desc = GetDescriptor(depthBufferBits, colorFormat, readWrite);
-            if(widthOverride > 0)
+            if (widthOverride > 0)
                 desc.width = widthOverride;
-            if(heightOverride > 0)
+            if (heightOverride > 0)
                 desc.height = heightOverride;
 
             //intermediates in VR are unchanged
-            if(stereoActive && desc.dimension == Rendering.TextureDimension.Tex2DArray)
+            if (stereoActive && desc.dimension == Rendering.TextureDimension.Tex2DArray)
                 desc.dimension = Rendering.TextureDimension.Tex2D;
 
-            if(isUpscaleOutput) {
+            if (isUpscaleOutput)
+            {
                 desc.enableRandomWrite = true;
                 desc.useDynamicScale = false;
             }
@@ -488,11 +519,12 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="heightOverride">Override the display height; use <c>0</c> to disable the override</param>
         /// <returns>A temporary render target</returns>
         public RenderTexture GetScreenSpaceTemporaryRT(int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default,
-            RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default, int widthOverride = 0, int heightOverride = 0) {
+            RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default, int widthOverride = 0, int heightOverride = 0)
+        {
             var desc = GetDescriptor(depthBufferBits, colorFormat, readWrite);
-            if(widthOverride > 0)
+            if (widthOverride > 0)
                 desc.width = widthOverride;
-            if(heightOverride > 0)
+            if (heightOverride > 0)
                 desc.height = heightOverride;
 
             return RenderTexture.GetTemporary(desc);
@@ -504,16 +536,21 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="isTAAEnabled">The enabled state of Temporal Anti-aliasing</param>
         /// <param name="isAOEnabled">The enabled state of Ambient Occlusion</param>
         /// <param name="isSSREnabled">The enabled state of Screen-space Reflections</param>
-        public void UpdateSinglePassStereoState(bool isTAAEnabled, bool isAOEnabled, bool isSSREnabled) {
+        public void UpdateSinglePassStereoState(bool isTAAEnabled, bool isAOEnabled, bool isSSREnabled)
+        {
 #if UNITY_2019_1_OR_NEWER && ENABLE_VR_MODULE && ENABLE_VR
             var xrDesc = XRSettings.eyeTextureDesc;
             screenWidth = XRSettings.eyeTextureWidth;
 
-            if(stereoRenderingMode == StereoRenderingMode.SinglePass) {
+            if (stereoRenderingMode == StereoRenderingMode.SinglePass)
+            {
                 //For complex effects, it's more efficient to disable XR single-pass interface
-                if(isTAAEnabled || isAOEnabled || isSSREnabled) {
+                if (isTAAEnabled || isAOEnabled || isSSREnabled)
+                {
                     numberOfEyes = 1;
-                } else {
+                }
+                else
+                {
                     //Use XR-interface method:
                     //We take care of providing stereoized camera render texture to postprocessing framework and rendering out the final postprocessed results to the each of the eye textures
                     // https://docs.google.com/document/d/1hANbhKCRIJs6ww7XoAIXbX3ArdAs7OBOTfZL1MqgtPI
