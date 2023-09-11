@@ -37,7 +37,7 @@ namespace UnityEngine.Rendering.PostProcessing
         [Tooltip("Fallback AA for when FSR 2 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
         [Range(0, 1)]
-        public float antiGhosting = 0.1f;
+        public float antiGhosting = 0.0f;
 #if AEG_FSR2
         public Func<PostProcessRenderContext, IFsr2Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks(context.resources);
 
