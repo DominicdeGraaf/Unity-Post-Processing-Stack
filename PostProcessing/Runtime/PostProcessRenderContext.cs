@@ -74,8 +74,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        public void SetRenderSize(Vector2Int renderSize)
-        {
+        public void SetRenderSize(Vector2Int renderSize) {
             // TODO: I suppose we should support XR as well at some point
             width = renderSize.x;
             height = renderSize.y;
@@ -319,8 +318,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// frame and allows re-using the same context object between frames without having to
         /// recreate a new one.
         /// </summary>
-        public void Reset()
-        {
+        public void Reset() {
             m_Camera = null;
             width = 0;
             height = 0;
@@ -352,7 +350,7 @@ namespace UnityEngine.Rendering.PostProcessing
             autoExposure = null;
             bloomBufferNameID = -1;
 
-            if (userData == null)
+            if(userData == null)
                 userData = new Dictionary<string, object>();
 
             userData.Clear();
@@ -363,44 +361,27 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         /// <returns><c>true</c> if temporal anti-aliasing is supported and enabled, <c>false</c>
         /// otherwise</returns>
-        public bool IsTemporalAntialiasingActive()
-        {
+        public bool IsTemporalAntialiasingActive() {
             return antialiasing == PostProcessLayer.Antialiasing.TemporalAntialiasing || antialiasing == PostProcessLayer.Antialiasing.FSR1
                 && !isSceneView;
         }
 
-        public bool IsFSR1Active()
-        {
-#if AEG_FSR1
+        public bool IsFSR1Active() {
             return antialiasing == PostProcessLayer.Antialiasing.FSR1
                && Application.isPlaying
                && !isSceneView;
-#else
-            return false;
-#endif
         }
 
-        public bool IsFSR2Active()
-        {
-#if AEG_FSR2
+        public bool IsFSR2Active() {
             return antialiasing == PostProcessLayer.Antialiasing.FSR2
                && Application.isPlaying
                && !isSceneView;
-#else
-            return false;
-#endif
         }
 
-        public bool IsDLSSActive()
-        {
-#if AEG_DLSS
+        public bool IsDLSSActive() {
             return antialiasing == PostProcessLayer.Antialiasing.DLSS
                && Application.isPlaying
                && !isSceneView;
-#else
-            return false;
-#endif
-
         }
 
         /// <summary>
@@ -409,8 +390,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="overlay">The debug overlay to look for</param>
         /// <returns><c>true</c> if the specified debug overlay is enable, <c>false</c>
         /// otherwise</returns>
-        public bool IsDebugOverlayEnabled(DebugOverlay overlay)
-        {
+        public bool IsDebugOverlayEnabled(DebugOverlay overlay) {
             return debugLayer.debugOverlay == overlay;
         }
 
@@ -423,16 +403,14 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="sheet">The property sheet to use for the blit</param>
         /// <param name="pass">The pass to use for the property sheet</param>
         /// <seealso cref="PostProcessDebugLayer.PushDebugOverlay"/>
-        public void PushDebugOverlay(CommandBuffer cmd, RenderTargetIdentifier source, PropertySheet sheet, int pass)
-        {
+        public void PushDebugOverlay(CommandBuffer cmd, RenderTargetIdentifier source, PropertySheet sheet, int pass) {
             debugLayer.PushDebugOverlay(cmd, source, sheet, pass);
         }
 
         // TODO: Change w/h name to texture w/h in order to make
         // size usages explicit
         RenderTextureDescriptor m_sourceDescriptor;
-        internal RenderTextureDescriptor GetDescriptor(int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default)
-        {
+        internal RenderTextureDescriptor GetDescriptor(int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default) {
             var modifiedDesc = new RenderTextureDescriptor(m_sourceDescriptor.width, m_sourceDescriptor.height,
                 m_sourceDescriptor.colorFormat, depthBufferBits);
             modifiedDesc.dimension = m_sourceDescriptor.dimension;
@@ -451,7 +429,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 modifiedDesc.useDynamicScale = true;
 #endif
 
-            if (colorFormat != RenderTextureFormat.Default)
+            if(colorFormat != RenderTextureFormat.Default)
                 modifiedDesc.colorFormat = colorFormat;
 
 #if UNITY_2019_1_OR_NEWER
@@ -482,20 +460,18 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="isUpscaleOutput">Enable random access write into this render texture and disable dynamic scaling</param>
         public void GetScreenSpaceTemporaryRT(CommandBuffer cmd, int nameID,
             int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default,
-            FilterMode filter = FilterMode.Bilinear, int widthOverride = 0, int heightOverride = 0, bool isUpscaleOutput = false)
-        {
+            FilterMode filter = FilterMode.Bilinear, int widthOverride = 0, int heightOverride = 0, bool isUpscaleOutput = false) {
             var desc = GetDescriptor(depthBufferBits, colorFormat, readWrite);
-            if (widthOverride > 0)
+            if(widthOverride > 0)
                 desc.width = widthOverride;
-            if (heightOverride > 0)
+            if(heightOverride > 0)
                 desc.height = heightOverride;
 
             //intermediates in VR are unchanged
-            if (stereoActive && desc.dimension == Rendering.TextureDimension.Tex2DArray)
+            if(stereoActive && desc.dimension == Rendering.TextureDimension.Tex2DArray)
                 desc.dimension = Rendering.TextureDimension.Tex2D;
 
-            if (isUpscaleOutput)
-            {
+            if(isUpscaleOutput) {
                 desc.enableRandomWrite = true;
                 desc.useDynamicScale = false;
             }
@@ -519,12 +495,11 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="heightOverride">Override the display height; use <c>0</c> to disable the override</param>
         /// <returns>A temporary render target</returns>
         public RenderTexture GetScreenSpaceTemporaryRT(int depthBufferBits = 0, RenderTextureFormat colorFormat = RenderTextureFormat.Default,
-            RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default, int widthOverride = 0, int heightOverride = 0)
-        {
+            RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default, int widthOverride = 0, int heightOverride = 0) {
             var desc = GetDescriptor(depthBufferBits, colorFormat, readWrite);
-            if (widthOverride > 0)
+            if(widthOverride > 0)
                 desc.width = widthOverride;
-            if (heightOverride > 0)
+            if(heightOverride > 0)
                 desc.height = heightOverride;
 
             return RenderTexture.GetTemporary(desc);
@@ -536,8 +511,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="isTAAEnabled">The enabled state of Temporal Anti-aliasing</param>
         /// <param name="isAOEnabled">The enabled state of Ambient Occlusion</param>
         /// <param name="isSSREnabled">The enabled state of Screen-space Reflections</param>
-        public void UpdateSinglePassStereoState(bool isTAAEnabled, bool isAOEnabled, bool isSSREnabled)
-        {
+        public void UpdateSinglePassStereoState(bool isTAAEnabled, bool isAOEnabled, bool isSSREnabled) {
 #if UNITY_2019_1_OR_NEWER && ENABLE_VR_MODULE && ENABLE_VR
             var xrDesc = XRSettings.eyeTextureDesc;
             screenWidth = XRSettings.eyeTextureWidth;
