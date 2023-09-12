@@ -25,7 +25,17 @@ namespace UnityEngine.Rendering.PostProcessing
             get; private set;
         }
 
+        public bool IsSupported() {
 #if AEG_DLSS
+            if(device == null) {
+                return false;
+            }
+            return device.IsFeatureAvailable(NVIDIA.GraphicsDeviceFeature.DLSS);
+#else
+            return false;
+#endif
+        }
+
         [Header("DLSS Settings")]
         public DLSSQuality qualityMode = DLSSQuality.MaximumQuality;
         [Range(0, 1)] public float antiGhosting = 0.1f;
@@ -35,6 +45,8 @@ namespace UnityEngine.Rendering.PostProcessing
         public float UpdateFrequency = 2;
         [Range(0, 1)]
         public float MipmapBiasOverride = 1f;
+
+#if AEG_DLSS
 #if UNITY_STANDALONE_WIN && UNITY_64
 
       
@@ -93,16 +105,7 @@ namespace UnityEngine.Rendering.PostProcessing
             AEG.DLSS.DLSS_UTILS.OnResetAllMipMaps();
         }
 
-        public bool IsSupported() {
-#if AEG_DLSS
-            if(device == null) {
-                return false;
-            }
-            return device.IsFeatureAvailable(NVIDIA.GraphicsDeviceFeature.DLSS);
-#else
-            return false;
-#endif
-        }
+
 
         public DepthTextureMode GetCameraFlags() {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
