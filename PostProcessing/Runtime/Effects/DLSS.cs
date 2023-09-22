@@ -11,6 +11,14 @@ using UnityEngine.NVIDIA;
 using static AEG.DLSS.DLSS_UTILS;
 using AEG.DLSS;
 using NVIDIA = UnityEngine.NVIDIA;
+#else
+public enum DLSSQuality
+{
+    MaximumQuality,
+    Balanced,
+    MaximumPerformance,
+    UltraPerformance,
+}
 #endif
 
 namespace UnityEngine.Rendering.PostProcessing
