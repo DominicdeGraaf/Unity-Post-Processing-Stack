@@ -122,6 +122,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public void Release(CommandBuffer cmd) {
             if(state != null) {
                 state.Cleanup(cmd);
+                state = null;
             }
         }
 
