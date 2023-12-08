@@ -6,12 +6,13 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 
-#if AEG_DLSS
+using AEG.DLSS;
+#if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
 using UnityEngine.NVIDIA;
 using static AEG.DLSS.DLSS_UTILS;
-using AEG.DLSS;
 using NVIDIA = UnityEngine.NVIDIA;
 #else
+
 public enum DLSSQuality
 {
     MaximumQuality,
@@ -34,7 +35,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         public bool IsSupported() {
-#if AEG_DLSS
+#if AEG_DLSS  && UNITY_STANDALONE_WIN && UNITY_64
             if(device == null) {
                 return false;
             }
@@ -45,7 +46,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         [Header("DLSS Settings")]
-        public DLSSQuality qualityMode = DLSSQuality.MaximumQuality;
+        public DLSS_Quality qualityMode = DLSS_Quality.MaximumQuality;
         [Range(0, 1)] public float antiGhosting = 0.1f;
 
         [Header("MipMap Settings")]
@@ -57,7 +58,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #if AEG_DLSS
 #if UNITY_STANDALONE_WIN && UNITY_64
 
-      
+
         public Vector2Int renderSize => _maxRenderSize;
         public Vector2Int displaySize => _displaySize;
 
@@ -78,7 +79,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private Vector2Int _maxRenderSize;
         private Vector2Int _displaySize;
-        private NVIDIA.DLSSQuality _prevQualityMode;
+        private DLSS_Quality _prevQualityMode;
         private Vector2Int _prevDisplaySize;
 
         private Rect _originalRect;
