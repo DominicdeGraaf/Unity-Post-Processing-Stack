@@ -149,7 +149,7 @@ namespace UnityEngine.Rendering.PostProcessing
             context.camera.rect = _originalRect;
         }
 
-        protected NVIDIA.GraphicsDevice _device;
+        static protected NVIDIA.GraphicsDevice _device;
         public NVIDIA.GraphicsDevice device
         {
             get
