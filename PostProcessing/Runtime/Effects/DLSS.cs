@@ -15,6 +15,7 @@ using NVIDIA = UnityEngine.NVIDIA;
 #else
 public enum DLSS_Quality
 {
+    DLAA,
     MaximumQuality,
     Balanced,
     MaximumPerformance,
