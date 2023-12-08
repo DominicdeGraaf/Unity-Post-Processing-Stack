@@ -6,14 +6,14 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 
-using AEG.DLSS;
+
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
+using AEG.DLSS;
 using UnityEngine.NVIDIA;
 using static AEG.DLSS.DLSS_UTILS;
 using NVIDIA = UnityEngine.NVIDIA;
 #else
-
-public enum DLSSQuality
+public enum DLSS_Quality
 {
     MaximumQuality,
     Balanced,
