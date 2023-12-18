@@ -1,7 +1,7 @@
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 using System;
 
-#if AEG_FSR1 && AEG_FSR2
+#if AEG_FSR1 && AEG_FSR3
 using FidelityFX;
 #endif
 
@@ -26,7 +26,7 @@ namespace UnityEngine.Rendering.PostProcessing
     [Serializable]
     public class FSR1
     {
-        [Tooltip("Fallback AA for when FSR 2 is not supported")]
+        [Tooltip("Fallback AA for when FSR 3 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
 
 #if AEG_FSR1
@@ -60,17 +60,14 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private ComputeBuffer EASUParametersCB, RCASParametersCB;
 
-        private bool isRCASSetup = false;
-
-
         public Vector2Int renderSize => _maxRenderSize;
         public Vector2Int displaySize => _displaySize;
         private Vector2Int _maxRenderSize;
         private Vector2Int _displaySize;
 
         //MAYBE
-        public Func<PostProcessRenderContext, IFsr2Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks();
-        private IFsr2Callbacks _callbacks;
+        public Func<PostProcessRenderContext, IFsr3Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks();
+        private IFsr3Callbacks _callbacks;
 
         private FSR.QualityMode _prevQualityMode;
         private Vector2Int _prevDisplaySize;
@@ -151,7 +148,11 @@ namespace UnityEngine.Rendering.PostProcessing
                 RCASParametersCB = null;
             }
 
-            isRCASSetup = false;
+            if(_callbacks != null) {
+                // Undo the current mipmap bias offset
+                _callbacks.OnResetAllMipMaps();
+                _callbacks = null;
+            }
         }
 
         public void Init()
@@ -320,7 +321,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        private class Callbacks : Fsr2CallbacksBase
+        private class Callbacks : Fsr3CallbacksBase
         {
             private readonly PostProcessResources _resources;
 
