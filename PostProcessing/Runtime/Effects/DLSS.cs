@@ -15,6 +15,7 @@ using NVIDIA = UnityEngine.NVIDIA;
 #else
 public enum DLSS_Quality
 {
+    Off,
     DLAA,
     MaximumQuality,
     Balanced,
@@ -113,22 +114,24 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         public void OnResetAllMipMaps() {
             AEG.DLSS.DLSS_UTILS.OnResetAllMipMaps();
-        }
-
-
+        } 
 
         public DepthTextureMode GetCameraFlags() {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
-        public void Release(CommandBuffer cmd) {
+        public void Release() {
             if(state != null && cmd != null) {
                 state.Cleanup(cmd);
                 state = null;
             }
+            OnResetAllMipMaps();
         }
 
         public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {
+            if(qualityMode == DLSS_Quality.Off) {
+                return;
+            }
             ApplyJitter(context.camera);
         }
 
@@ -174,12 +177,15 @@ namespace UnityEngine.Rendering.PostProcessing
             _device = NVIDIA.GraphicsDevice.CreateGraphicsDevice();
         }
 
-
+        CommandBuffer cmd;
         public void Render(PostProcessRenderContext context) {
-            if(device == null) {
 
+            cmd = context.command;
+            if(qualityMode == DLSS_Quality.Off) {
+                cmd.Blit(context.source, context.destination);
+                return;
             }
-            var cmd = context.command;
+
             cmd.BeginSample("DLSS");
 
             if(state == null) {

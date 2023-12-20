@@ -510,9 +510,9 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 #endif
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
-            //if(m_CurrentContext.IsDLSSActive()) {
-            //    //dlss.Release(context.command);
-            //}
+            if(m_CurrentContext.IsDLSSActive()) {
+                dlss.Release();
+            }
 #endif
             m_LogHistogram.Release();
 
@@ -747,7 +747,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 #if AEG_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 // Ensure all of DLSS's resources are released when it's not in use
-                dlss.Release(context.command);
+                dlss.Release();
 #endif
                 if (m_originalTargetTexture != null)
                 {

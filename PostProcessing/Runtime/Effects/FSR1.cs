@@ -1,7 +1,7 @@
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 using System;
 
-#if AEG_FSR1 && AEG_FSR3
+#if AEG_FSR1 && AEG_FSR2
 using FidelityFX;
 #endif
 
@@ -26,7 +26,7 @@ namespace UnityEngine.Rendering.PostProcessing
     [Serializable]
     public class FSR1
     {
-        [Tooltip("Fallback AA for when FSR 3 is not supported")]
+        [Tooltip("Fallback AA for when FSR 2 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
 
 #if AEG_FSR1
@@ -66,8 +66,8 @@ namespace UnityEngine.Rendering.PostProcessing
         private Vector2Int _displaySize;
 
         //MAYBE
-        public Func<PostProcessRenderContext, IFsr3Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks();
-        private IFsr3Callbacks _callbacks;
+        public Func<PostProcessRenderContext, IFsr2Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks();
+        private IFsr2Callbacks _callbacks;
 
         private FSR.QualityMode _prevQualityMode;
         private Vector2Int _prevDisplaySize;
@@ -321,7 +321,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        private class Callbacks : Fsr3CallbacksBase
+        private class Callbacks : Fsr2CallbacksBase
         {
             private readonly PostProcessResources _resources;
 
