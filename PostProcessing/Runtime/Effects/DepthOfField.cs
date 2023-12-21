@@ -194,9 +194,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 var jitter = context.temporalAntialiasing.jitter;
 
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, blend));
-            } else if(context.IsFSR2Active()) {
-#if AEG_FSR2
-                var jitter = context.superResolution2.jitter;
+            } else if(context.IsFSR3Active()) {
+#if AEG_FSR3
+                var jitter = context.superResolution3.jitter;
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, m_ResetHistory ? 0f : 0.85f));
 #endif
             } else if (context.IsDLSSActive())
@@ -207,7 +207,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
             }
 
-            if (context.IsTemporalAntialiasingActive() || context.IsFSR2Active()) {
+            if (context.IsTemporalAntialiasingActive() || context.IsFSR3Active()) {
                 int pp = m_HistoryPingPong[context.xrActiveEye];
                 var historyRead = CheckHistory(context.xrActiveEye, ++pp % 2, context, cocFormat);
                 var historyWrite = CheckHistory(context.xrActiveEye, ++pp % 2, context, cocFormat);
@@ -238,7 +238,7 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.BlitFullscreenTriangle(context.source, context.destination, sheet, (int)Pass.Combine);
             cmd.ReleaseTemporaryRT(ShaderIDs.DepthOfFieldTex);
 
-            if(!context.IsTemporalAntialiasingActive() && !context.IsFSR2Active())
+            if(!context.IsTemporalAntialiasingActive() && !context.IsFSR3Active())
                 cmd.ReleaseTemporaryRT(ShaderIDs.CoCTex);
 
             cmd.EndSample("DepthOfField");

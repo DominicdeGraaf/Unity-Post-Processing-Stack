@@ -286,15 +286,15 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         /// <summary>
-        /// A reference to the FSR2 settings for the rendering layer.
+        /// A reference to the FSR3 settings for the rendering layer.
         /// </summary>
-        public FSR2 superResolution2
+        public FSR3 superResolution3
         {
             get; internal set;
         }
 
         /// <summary>
-        /// A reference to the FSR2 settings for the rendering layer.
+        /// A reference to the DLSS settings for the rendering layer.
         /// </summary>
         public DLSS deepLearningSuperSampling
         {
@@ -372,8 +372,8 @@ namespace UnityEngine.Rendering.PostProcessing
                && !isSceneView;
         }
 
-        public bool IsFSR2Active() {
-            return antialiasing == PostProcessLayer.Antialiasing.FSR2
+        public bool IsFSR3Active() {
+            return antialiasing == PostProcessLayer.Antialiasing.FSR3
                && Application.isPlaying
                && !isSceneView;
         }

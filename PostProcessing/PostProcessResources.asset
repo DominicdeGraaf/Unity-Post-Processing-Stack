@@ -3,8 +3,9 @@
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
@@ -136,20 +137,4 @@ MonoBehaviour:
       type: 3}
     gaussianDownsample: {fileID: 7200000, guid: 6dba4103d23a7904fbc49099355aff3e,
       type: 3}
-    namedShaders:
-    - name: FSR2/ffx_fsr2_compute_luminance_pyramid_pass
-      shader: {fileID: 7200000, guid: 0894ebeefb6aa7d4680c71dffbda3fee, type: 3}
-    - name: FSR2/ffx_fsr2_reconstruct_previous_depth_pass
-      shader: {fileID: 7200000, guid: 6ef1b4c25874e334dad5ba3ac6345e32, type: 3}
-    - name: FSR2/ffx_fsr2_depth_clip_pass
-      shader: {fileID: 7200000, guid: 8026d9d8542eab6499c32d5d46beb2b6, type: 3}
-    - name: FSR2/ffx_fsr2_lock_pass
-      shader: {fileID: 7200000, guid: 3c96d72b39a840c428c901628dab92c0, type: 3}
-    - name: FSR2/ffx_fsr2_accumulate_pass
-      shader: {fileID: 7200000, guid: 702560780e923c84394c9b22ba460a9c, type: 3}
-    - name: FSR2/ffx_fsr2_rcas_pass
-      shader: {fileID: 7200000, guid: 5a82801f160ff6a4eb47db567216e592, type: 3}
-    - name: FSR2/ffx_fsr2_autogen_reactive_pass
-      shader: {fileID: 7200000, guid: d18fb8811ca4753469c439784546104e, type: 3}
-    - name: FSR2/ffx_fsr2_tcr_autogen_pass
-      shader: {fileID: 7200000, guid: b478fba0a6a87b44b8be7c35deb5f0dc, type: 3}
+    namedShaders: []

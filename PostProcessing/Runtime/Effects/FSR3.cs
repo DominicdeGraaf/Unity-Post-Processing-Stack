@@ -24,7 +24,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
-#if AEG_FSR2
+#if AEG_FSR3
 using FidelityFX;
 #endif
 
@@ -32,21 +32,21 @@ namespace UnityEngine.Rendering.PostProcessing
 {
     [UnityEngine.Scripting.Preserve]
     [Serializable]
-    public class FSR2
+    public class FSR3
     {
-        [Tooltip("Fallback AA for when FSR 2 is not supported")]
+        [Tooltip("Fallback AA for when FSR 3 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
         [Range(0, 1)]
         public float antiGhosting = 0.0f;
-#if AEG_FSR2
-        public Func<PostProcessRenderContext, IFsr2Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks(context.resources);
+#if AEG_FSR3
+        public Func<PostProcessRenderContext, IFsr3Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks(context.resources);
 
         [Tooltip("Standard scaling ratio presets.")]
 
-        [Header("FSR 2 Settings")]
-        public Fsr2.QualityMode qualityMode = Fsr2.QualityMode.Quality;
+        [Header("FSR 3 Settings")]
+        public Fsr3.QualityMode qualityMode = Fsr3.QualityMode.Quality;
 
-    
+
         [Tooltip("Apply RCAS sharpening to the image after upscaling.")]
         public bool Sharpening = true;
         [Tooltip("Strength of the sharpening effect.")]
@@ -65,7 +65,7 @@ namespace UnityEngine.Rendering.PostProcessing
         [Tooltip("A value to set for the binary reactive mask")]
         [Range(0, 1)] public float ReactiveBinaryValue = 0.5f;
         [Tooltip("Flags to determine how to generate the reactive mask")]
-        public Fsr2.GenerateReactiveFlags flags = Fsr2.GenerateReactiveFlags.ApplyTonemap | Fsr2.GenerateReactiveFlags.ApplyThreshold | Fsr2.GenerateReactiveFlags.UseComponentsMax;
+        public Fsr3.GenerateReactiveFlags flags = Fsr3.GenerateReactiveFlags.ApplyTonemap | Fsr3.GenerateReactiveFlags.ApplyThreshold | Fsr3.GenerateReactiveFlags.UseComponentsMax;
 
         [Header("MipMap Settings")]
         public bool AutoTextureUpdate = true;
@@ -80,7 +80,7 @@ namespace UnityEngine.Rendering.PostProcessing
         [HideInInspector, Tooltip("Optional texture for marking areas of specialist rendering which should be accounted for during the upscaling process. If unset, a default cleared mask will be used.")]
         public Texture transparencyAndCompositionMask = null;
 
-        [HideInInspector, Tooltip("Choose where to get the exposure value from. Use auto-exposure from either FSR2 or Unity, provide a manual exposure texture, or use a default value.")]
+        [HideInInspector, Tooltip("Choose where to get the exposure value from. Use auto-exposure from either FSR or Unity, provide a manual exposure texture, or use a default value.")]
         public ExposureSource exposureSource = ExposureSource.Auto;
         [HideInInspector, Tooltip("Value by which the input signal will be divided, to get back to the original signal produced by the game.")]
         public float preExposure = 1.0f;
@@ -123,17 +123,17 @@ namespace UnityEngine.Rendering.PostProcessing
             get; set;
         }
 
-        private Fsr2Context _fsrContext;
+        private Fsr3Context _fsrContext;
         private Vector2Int _maxRenderSize;
         private Vector2Int _displaySize;
         private bool _resetHistory;
 
-        private IFsr2Callbacks _callbacks;
+        private IFsr3Callbacks _callbacks;
 
-        private readonly Fsr2.DispatchDescription _dispatchDescription = new Fsr2.DispatchDescription();
-        private readonly Fsr2.GenerateReactiveDescription _genReactiveDescription = new Fsr2.GenerateReactiveDescription();
+        private readonly Fsr3.DispatchDescription _dispatchDescription = new Fsr3.DispatchDescription();
+        private readonly Fsr3.GenerateReactiveDescription _genReactiveDescription = new Fsr3.GenerateReactiveDescription();
 
-        private Fsr2.QualityMode _prevQualityMode;
+        private Fsr3.QualityMode _prevQualityMode;
         private ExposureSource _prevExposureSource;
         private Vector2Int _prevDisplaySize;
 
@@ -190,6 +190,9 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {
+            if(qualityMode == Fsr3.QualityMode.Off) {
+                return;
+            }
             ApplyJitter(context.camera);
         }
 
@@ -199,7 +202,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Determine the desired rendering and display resolutions
             _displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
-            Fsr2.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, qualityMode);
+            Fsr3.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, qualityMode);
             _maxRenderSize = new Vector2Int(maxRenderWidth, maxRenderHeight);
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
@@ -213,10 +216,15 @@ namespace UnityEngine.Rendering.PostProcessing
 
         public void Render(PostProcessRenderContext context) {
             var cmd = context.command;
-            cmd.BeginSample("FSR2");
+            if(qualityMode == Fsr3.QualityMode.Off) {
+                cmd.Blit(context.source, context.destination);
+                return;
+            }
 
-            // Monitor for any resolution changes and recreate the FSR2 context if necessary
-            // We can't create an FSR2 context without info from the post-processing context, so delay the initial setup until here
+            cmd.BeginSample("FSR3");
+
+            // Monitor for any resolution changes and recreate the FSR3 context if necessary
+            // We can't create an FSR3 context without info from the post-processing context, so delay the initial setup until here
             if(_fsrContext == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode || exposureSource != _prevExposureSource) {
                 DestroyFsrContext();
                 CreateFsrContext(context);
@@ -227,9 +235,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 UpdateMipMaps(context.camera.scaledPixelWidth, _displaySize.x);
             }
 
-            cmd.SetGlobalTexture(Fsr2ShaderIDs.SrvInputColor, context.source);
-            cmd.SetGlobalTexture(Fsr2ShaderIDs.SrvInputDepth, BuiltinRenderTextureType.CameraTarget, RenderTextureSubElement.Depth);
-            cmd.SetGlobalTexture(Fsr2ShaderIDs.SrvInputMotionVectors, BuiltinRenderTextureType.MotionVectors);
+            cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputColor, context.source);
+            cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputDepth, BuiltinRenderTextureType.CameraTarget, RenderTextureSubElement.Depth);
+            cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputMotionVectors, BuiltinRenderTextureType.MotionVectors);
 
             SetupDispatchDescription(context);
 
@@ -237,14 +245,14 @@ namespace UnityEngine.Rendering.PostProcessing
                 SetupAutoReactiveDescription(context);
 
                 var scaledRenderSize = _genReactiveDescription.RenderSize;
-                cmd.GetTemporaryRT(Fsr2ShaderIDs.UavAutoReactive, scaledRenderSize.x, scaledRenderSize.y, 0, default, GraphicsFormat.R8_UNorm, 1, true);
+                cmd.GetTemporaryRT(Fsr3ShaderIDs.UavAutoReactive, scaledRenderSize.x, scaledRenderSize.y, 0, default, GraphicsFormat.R8_UNorm, 1, true);
                 _fsrContext.GenerateReactiveMask(_genReactiveDescription, cmd);
-                _dispatchDescription.Reactive = Fsr2ShaderIDs.UavAutoReactive;
+                _dispatchDescription.Reactive = Fsr3ShaderIDs.UavAutoReactive;
             }
 
             _fsrContext.Dispatch(_dispatchDescription, cmd);
 
-            cmd.EndSample("FSR2");
+            cmd.EndSample("FSR3");
 
             _resetHistory = false;
         }
@@ -275,19 +283,19 @@ namespace UnityEngine.Rendering.PostProcessing
 
             enableFP16 = SystemInfo.IsFormatSupported(UnityEngine.Experimental.Rendering.GraphicsFormat.R16_SFloat, UnityEngine.Experimental.Rendering.FormatUsage.Render);
 
-            // Initialize FSR2 context
-            Fsr2.InitializationFlags flags = 0;
+            // Initialize FSR3 context
+            Fsr3.InitializationFlags flags = 0;
             if(context.camera.allowHDR)
-                flags |= Fsr2.InitializationFlags.EnableHighDynamicRange;
+                flags |= Fsr3.InitializationFlags.EnableHighDynamicRange;
             if(enableFP16)
-                flags |= Fsr2.InitializationFlags.EnableFP16Usage;
+                flags |= Fsr3.InitializationFlags.EnableFP16Usage;
             if(exposureSource == ExposureSource.Auto)
-                flags |= Fsr2.InitializationFlags.EnableAutoExposure;
+                flags |= Fsr3.InitializationFlags.EnableAutoExposure;
             if(RuntimeUtilities.IsDynamicResolutionEnabled(context.camera))
-                flags |= Fsr2.InitializationFlags.EnableDynamicResolution;
+                flags |= Fsr3.InitializationFlags.EnableDynamicResolution;
 
             _callbacks = callbacksFactory(context);
-            _fsrContext = Fsr2.CreateContext(_displaySize, _maxRenderSize, _callbacks, flags);
+            _fsrContext = Fsr3.CreateContext(_displaySize, _maxRenderSize, _callbacks, flags);
         }
 
         private void DestroyFsrContext() {
@@ -306,9 +314,9 @@ namespace UnityEngine.Rendering.PostProcessing
         private void ApplyJitter(Camera camera) {
             var scaledRenderSize = GetScaledRenderSize(camera);
 
-            // Perform custom jittering of the camera's projection matrix according to FSR2's recipe
-            int jitterPhaseCount = Fsr2.GetJitterPhaseCount(scaledRenderSize.x, _displaySize.x);
-            Fsr2.GetJitterOffset(out float jitterX, out float jitterY, Time.frameCount, jitterPhaseCount);
+            // Perform custom jittering of the camera's projection matrix according to FSR3's recipe
+            int jitterPhaseCount = Fsr3.GetJitterPhaseCount(scaledRenderSize.x, _displaySize.x);
+            Fsr3.GetJitterOffset(out float jitterX, out float jitterY, Time.frameCount, jitterPhaseCount);
 
             _dispatchDescription.JitterOffset = new Vector2(jitterX, jitterY);
 
@@ -330,7 +338,7 @@ namespace UnityEngine.Rendering.PostProcessing
         private void SetupDispatchDescription(PostProcessRenderContext context) {
             var camera = context.camera;
 
-            // Set up the main FSR2 dispatch parameters
+            // Set up the main FSR3 dispatch parameters
             // The input textures are left blank here, as they get bound directly through SetGlobalTexture elsewhere in this source file
             _dispatchDescription.Color = null;
             _dispatchDescription.Depth = null;
@@ -376,7 +384,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             if(SystemInfo.usesReversedZBuffer) {
-                // Swap the near and far clip plane distances as FSR2 expects this when using inverted depth
+                // Swap the near and far clip plane distances as FSR3 expects this when using inverted depth
                 (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
             }
         }
@@ -400,7 +408,7 @@ namespace UnityEngine.Rendering.PostProcessing
             return new Vector2Int(Mathf.CeilToInt(_maxRenderSize.x * ScalableBufferManager.widthScaleFactor), Mathf.CeilToInt(_maxRenderSize.y * ScalableBufferManager.heightScaleFactor));
         }
 
-        private class Callbacks : Fsr2CallbacksBase
+        private class Callbacks : Fsr3CallbacksBase
         {
             private readonly PostProcessResources _resources;
 
@@ -409,7 +417,8 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             public override ComputeShader LoadComputeShader(string name) {
-                return _resources.computeShaders.FindComputeShader(name);
+                return Resources.Load<ComputeShader>(name);
+                //return _resources.computeShaders.FindComputeShader(name);
             }
 
             public override void UnloadComputeShader(ComputeShader shader) {
