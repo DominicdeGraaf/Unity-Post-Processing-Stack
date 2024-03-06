@@ -121,11 +121,14 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         public void Release() {
-            if(state != null && cmd != null) {
-                state.Cleanup(cmd);
+            if(state != null) {
+                if(cmd != null) {
+                    state.Cleanup(cmd);
+                }
+
                 state = null;
+                OnResetAllMipMaps();
             }
-            OnResetAllMipMaps();
         }
 
         public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {
