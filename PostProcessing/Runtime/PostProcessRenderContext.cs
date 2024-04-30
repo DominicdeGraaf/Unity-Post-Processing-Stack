@@ -278,6 +278,14 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         /// <summary>
+        /// A reference to the SGSR settings for the rendering layer.
+        /// </summary>
+        public SGSR sgsr
+        {
+            get; internal set;
+        }
+
+        /// <summary>
         /// A reference to the FSR1 settings for the rendering layer.
         /// </summary>
         public FSR1 superResolution1
@@ -362,7 +370,14 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <returns><c>true</c> if temporal anti-aliasing is supported and enabled, <c>false</c>
         /// otherwise</returns>
         public bool IsTemporalAntialiasingActive() {
-            return antialiasing == PostProcessLayer.Antialiasing.TemporalAntialiasing || antialiasing == PostProcessLayer.Antialiasing.FSR1
+            return antialiasing == PostProcessLayer.Antialiasing.TemporalAntialiasing || antialiasing == PostProcessLayer.Antialiasing.SGSR || antialiasing == PostProcessLayer.Antialiasing.FSR1
+                && !isSceneView;
+        }
+
+        public bool IsSGSRActive()
+        {
+            return antialiasing == PostProcessLayer.Antialiasing.SGSR
+                && Application.isPlaying
                 && !isSceneView;
         }
 

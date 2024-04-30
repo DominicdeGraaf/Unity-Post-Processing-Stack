@@ -195,13 +195,13 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, blend));
             } else if(context.IsFSR3Active()) {
-#if AEG_FSR3
+#if TND_FSR3 || TND_FSR3
                 var jitter = context.superResolution3.jitter;
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, m_ResetHistory ? 0f : 0.85f));
 #endif
             } else if (context.IsDLSSActive())
             {
-#if AEG_DLSS
+#if TND_DLSS || AEG_DLSS
                 var jitter = context.deepLearningSuperSampling.jitter;
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, m_ResetHistory ? 0f : 0.85f));
 #endif

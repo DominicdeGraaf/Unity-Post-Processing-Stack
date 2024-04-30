@@ -24,7 +24,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
-#if AEG_FSR3
+#if TND_FSR3 || AEG_FSR3
 using FidelityFX;
 #endif
 
@@ -38,7 +38,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public Antialiasing fallBackAA = Antialiasing.None;
         [Range(0, 1)]
         public float antiGhosting = 0.0f;
-#if AEG_FSR3
+#if TND_FSR3 || AEG_FSR3
         public Func<PostProcessRenderContext, IFsr3Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks(context.resources);
 
         [Tooltip("Standard scaling ratio presets.")]

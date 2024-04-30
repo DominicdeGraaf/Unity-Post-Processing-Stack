@@ -1,7 +1,7 @@
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 using System;
 
-#if AEG_FSR1 && AEG_FSR3
+#if TND_FSR1 && TND_FSR3 || AEG_FSR1 && AEG_FSR3 
 using FidelityFX;
 #endif
 
@@ -9,7 +9,7 @@ using FidelityFX;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if AEG_FSR1
+#if TND_FSR1 || AEG_FSR1
     namespace FSR
     {
         public enum QualityMode
@@ -29,7 +29,7 @@ namespace UnityEngine.Rendering.PostProcessing
         [Tooltip("Fallback AA for when FSR 3 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
 
-#if AEG_FSR1
+#if TND_FSR1 || AEG_FSR1
 
         [Header("FSR Compute Shaders")]
         public ComputeShader computeShaderEASU;

@@ -5,9 +5,10 @@
         "Unity.Postprocessing.Runtime",
         "Unity.XR.Management",
         "Unity.XR.Management.Editor",
-        "com.alteregogames.aeg-fsr.Runtime",
-        "com.alteregogames.aeg-dlss.Editor",
-        "com.alteregogames.aeg-dlss.Runtime"
+        "com.thenakeddev.fsr.Runtime",
+        "com.thenakeddev.dlss.Runtime",
+        "com.thenakeddev.dlss.Editor",
+        "com.thenakeddev.sgsr.Runtime"
     ],
     "includePlatforms": [
         "Editor"
