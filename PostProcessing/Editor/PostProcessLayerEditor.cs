@@ -180,7 +180,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_SGSRUpdateFrequency = FindProperty(x => x.sgsr.updateFrequency);
             m_SGSRMipmapBiasOverride = FindProperty(x => x.sgsr.mipmapBiasOverride);
 #endif
-#if TND_FSR1
+#if TND_FSR1 || AEG_FSR1
             m_FSR1QualityMode = FindProperty(x => x.fsr1.qualityMode);
             m_FSR1PerformSharpen = FindProperty(x => x.fsr1.Sharpening);
             m_FSR1Sharpness = FindProperty(x => x.fsr1.sharpness);
@@ -189,7 +189,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_FSR1UpdateFrequency = FindProperty(x => x.fsr1.UpdateFrequency);
             m_FSR1MipmapBiasOverride = FindProperty(x => x.fsr1.MipmapBiasOverride);
 #endif
-#if TND_FSR3
+#if TND_FSR3 || AEG_FSR3
             m_FSR3QualityMode = FindProperty(x => x.fsr3.qualityMode);
             m_FSR3PerformSharpen = FindProperty(x => x.fsr3.Sharpening);
             m_FSR3Sharpness = FindProperty(x => x.fsr3.sharpness);
@@ -218,7 +218,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_FSR3AntiGhosting = FindProperty(x => x.fsr3.antiGhosting);
 
 #endif
-#if TND_DLSS
+#if TND_DLSS || AEG_DLSS
             m_DLSSQualityMode = FindProperty(x => x.dlss.qualityMode);
             m_DLSSAntiGhosting = FindProperty(x => x.dlss.antiGhosting);
 
@@ -378,7 +378,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUI.indentLevel++;
                     m_FSR1FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 3 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR1FallBack.intValue, s_AntialiasingFSR1FallBackMethodNames);
                     EditorGUI.indentLevel--;
-#if TND_FSR1
+#if TND_FSR1 || AEG_FSR1
                     EditorGUILayout.PropertyField(m_FSR1QualityMode);
                     EditorGUILayout.PropertyField(m_FSR1PerformSharpen);
                     if (m_FSR1PerformSharpen.boolValue)
@@ -417,7 +417,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     m_FSR3FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 3 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR3FallBack.intValue, s_AntialiasingFSR3FallBackMethodNames);
                     EditorGUI.indentLevel--;
 
-#if TND_FSR3
+#if TND_FSR3 || AEG_FSR3
                     EditorGUILayout.PropertyField(m_FSR3QualityMode);
                     EditorGUILayout.PropertyField(m_FSR3AntiGhosting);
                     EditorGUILayout.PropertyField(m_FSR3PerformSharpen);
@@ -466,7 +466,7 @@ namespace UnityEditor.Rendering.PostProcessing
                         AssetDatabase.Refresh();
                     }
 #else
-#if TND_DLSS
+#if TND_DLSS || AEG_DLSS
 
                     EditorGUILayout.PropertyField(m_DLSSQualityMode);
                     EditorGUILayout.PropertyField(m_DLSSAntiGhosting);
