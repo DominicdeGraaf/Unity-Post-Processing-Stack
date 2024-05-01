@@ -8,7 +8,11 @@
         "com.thenakeddev.fsr.Runtime",
         "com.thenakeddev.dlss.Runtime",
         "com.thenakeddev.dlss.Editor",
-        "com.thenakeddev.sgsr.Runtime"
+        "com.thenakeddev.sgsr.Runtime",
+        "com.alteregogames.aeg-fsr.Runtime",
+        "com.alteregogames.aeg-fsr.Editor",
+        "com.alteregogames.aeg-dlss.Runtime",
+        "com.alteregogames.aeg-dlss.Editor"
     ],
     "includePlatforms": [
         "Editor"
