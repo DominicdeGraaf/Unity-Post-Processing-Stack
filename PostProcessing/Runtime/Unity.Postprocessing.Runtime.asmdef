@@ -2,9 +2,11 @@
     "name": "Unity.Postprocessing.Runtime",
     "rootNamespace": "",
     "references": [
-        "GUID:64c6ee5f9734bc441995a68b796badf2",
-        "GUID:ee5df7fffe3b9b5429074cc8503d1844",
-        "GUID:138c3c478da8a354aa5d31d3a36e0320"
+        "com.thenakeddev.fsr.Runtime",
+        "com.thenakeddev.dlss.Runtime",
+        "com.thenakeddev.sgsr.Runtime",
+        "com.alteregogames.aeg-fsr.Runtime",
+        "com.alteregogames.aeg-dlss.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

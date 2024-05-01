@@ -1,7 +1,7 @@
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 using System;
 
-#if TND_FSR1 && TND_FSR3 || AEG_FSR1 && AEG_FSR3 
+#if TND_FSR1 && TND_FSR3 || AEG_FSR1 && AEG_FSR3
 using FidelityFX;
 #endif
 
@@ -94,8 +94,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipmapSingleTexture(Texture texture)
-        {
+        public void OnMipmapSingleTexture(Texture texture) {
             texture.mipMapBias = m_mipMapBias;
         }
 
@@ -103,47 +102,39 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates all textures currently loaded to the set MipMap Bias.
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipMapAllTextures()
-        {
+        public void OnMipMapAllTextures() {
             _callbacks.OnMipMapAllTextures(m_mipMapBias);
         }
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
-        public void OnResetAllMipMaps()
-        {
+        public void OnResetAllMipMaps() {
             _callbacks.OnResetAllMipMaps();
         }
 
-        public bool IsSupported()
-        {
+        public bool IsSupported() {
             return SystemInfo.supportsComputeShaders;
         }
 
-        public void Release()
-        {
+        public void Release() {
             computeShaderEASU = null;
             computeShaderRCAS = null;
-            if (outputImage)
-            {
+            if(outputImage) {
                 outputImage.Release();
                 outputImage = null;
             }
 
-            if (EASUParametersCB != null)
-            {
+            if(EASUParametersCB != null) {
                 EASUParametersCB.Dispose();
                 EASUParametersCB = null;
             }
 
-            if (outputImage2)
-            {
+            if(outputImage2) {
                 outputImage2.Release();
                 outputImage2 = null;
             }
 
-            if (RCASParametersCB != null)
-            {
+            if(RCASParametersCB != null) {
                 RCASParametersCB.Dispose();
                 RCASParametersCB = null;
             }
@@ -155,8 +146,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        public void Init()
-        {
+        public void Init() {
             _callbacks = callbacksFactory(null);
 
             computeShaderEASU = (ComputeShader)Resources.Load("FSR1/EdgeAdaptiveScaleUpsampling");
@@ -169,8 +159,7 @@ namespace UnityEngine.Rendering.PostProcessing
             RCASParametersCB.name = "RCAS Parameters";
         }
 
-        public void ConfigureCameraViewport(PostProcessRenderContext context)
-        {
+        public void ConfigureCameraViewport(PostProcessRenderContext context) {
             var camera = context.camera;
             _originalRect = camera.rect;
 
@@ -184,25 +173,20 @@ namespace UnityEngine.Rendering.PostProcessing
 
         }
 
-        public void ResetCameraViewport(PostProcessRenderContext context)
-        {
+        public void ResetCameraViewport(PostProcessRenderContext context) {
             context.camera.rect = _originalRect;
         }
 
-        public void Render(PostProcessRenderContext context)
-        {
+        public void Render(PostProcessRenderContext context) {
             //FSR1
             ResolveFSR1(context);
         }
 
-        private void ResolveFSR1(PostProcessRenderContext context)
-        {
-            if (computeShaderEASU == null || computeShaderRCAS == null)
-            {
+        private void ResolveFSR1(PostProcessRenderContext context) {
+            if(computeShaderEASU == null || computeShaderRCAS == null) {
                 Init();
             }
-            if (AutoTextureUpdate)
-            {
+            if(AutoTextureUpdate) {
                 UpdateMipMaps(renderSize.x, _displaySize.x);
             }
             //FSR1
@@ -211,8 +195,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             var camera = context.camera;
 
-            if (outputImage == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode)
-            {
+            if(outputImage == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode) {
                 scaleFactor = GetScaling();
 
                 m_mipMapTimer = Mathf.Infinity;
@@ -221,16 +204,17 @@ namespace UnityEngine.Rendering.PostProcessing
                 float mipBias = -Mathf.Lerp(0.38f, 1f, normalizedScale); //Ultra Quality -0.38f, Quality -0.58f, Balanced -0.79f, Performance -1f
 
                 //EASU
-                if (outputImage) outputImage.Release();
+                if(outputImage)
+                    outputImage.Release();
                 outputImage = new RenderTexture(displaySize.x, displaySize.y, 0, context.sourceFormat, RenderTextureReadWrite.sRGB);
                 outputImage.enableRandomWrite = true;
                 outputImage.mipMapBias = mipBias; //Ultra Quality -0.38f, Quality -0.58f, Balanced -0.79f, Performance -1f
                 outputImage.Create();
 
                 //RCAS
-                if (Sharpening)
-                {
-                    if (outputImage2) outputImage2.Release();
+                if(Sharpening) {
+                    if(outputImage2)
+                        outputImage2.Release();
                     outputImage2 = new RenderTexture(displaySize.x, displaySize.y, 0, context.sourceFormat, RenderTextureReadWrite.sRGB);
                     outputImage2.enableRandomWrite = true;
                     outputImage2.Create();
@@ -256,8 +240,7 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.DispatchCompute(computeShaderEASU, 0, dispatchX, dispatchY, 1); //main
 
             //RCAS
-            if (Sharpening)
-            {
+            if(Sharpening) {
                 cmd.SetComputeBufferParam(computeShaderRCAS, 1, _RCASParameters, RCASParametersCB);
                 cmd.SetComputeFloatParam(computeShaderRCAS, _RCASScale, 1 - sharpness);
                 cmd.DispatchCompute(computeShaderRCAS, 1, 1, 1, 1); //init
@@ -269,32 +252,21 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.DispatchCompute(computeShaderRCAS, 0, dispatchX, dispatchY, 1); //main
             }
 
-            if (Sharpening)
-            {
+            if(Sharpening) {
                 cmd.BlitFullscreenTriangle(Sharpening ? outputImage2 : outputImage, context.destination, false, new Rect(0f, 0f, displaySize.x, displaySize.y));
-            }
-            else
-            {
+            } else {
                 cmd.Blit(context.source, context.destination);
             }
             cmd.EndSample("FSR1");
         }
-        private float GetScaling()
-        {
-            if (qualityMode == FSR.QualityMode.Quality)
-            {
+        private float GetScaling() {
+            if(qualityMode == FSR.QualityMode.Quality) {
                 return 1.5f;
-            }
-            else if (qualityMode == FSR.QualityMode.Balanced)
-            {
+            } else if(qualityMode == FSR.QualityMode.Balanced) {
                 return 1.7f;
-            }
-            else if (qualityMode == FSR.QualityMode.Performance)
-            {
+            } else if(qualityMode == FSR.QualityMode.Performance) {
                 return 2.0f;
-            }
-            else
-            {
+            } else {
                 return 3;
             }
         }
@@ -302,17 +274,14 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <summary>
         /// Automatically updates the mipmap of all loaded textures
         /// </summary>
-        protected void UpdateMipMaps(float _renderWidth, float _displayWidth)
-        {
+        protected void UpdateMipMaps(float _renderWidth, float _displayWidth) {
             m_mipMapTimer += Time.deltaTime;
 
-            if (m_mipMapTimer > UpdateFrequency)
-            {
+            if(m_mipMapTimer > UpdateFrequency) {
                 m_mipMapTimer = 0;
 
                 m_mipMapBias = (Mathf.Log(_renderWidth / _displayWidth, 2f) - 1) * MipmapBiasOverride;
-                if (m_previousLength != Texture.currentTextureMemory || m_prevMipMapBias != m_mipMapBias)
-                {
+                if(m_previousLength != Texture.currentTextureMemory || m_prevMipMapBias != m_mipMapBias) {
                     m_prevMipMapBias = m_mipMapBias;
                     m_previousLength = Texture.currentTextureMemory;
 
@@ -325,8 +294,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             private readonly PostProcessResources _resources;
 
-            public Callbacks()
-            {
+            public Callbacks() {
             }
         }
 #endif
