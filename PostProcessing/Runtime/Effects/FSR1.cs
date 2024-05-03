@@ -71,6 +71,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private FSR.QualityMode _prevQualityMode;
         private Vector2Int _prevDisplaySize;
+        private bool _prevSharpening;
 
         private Rect _originalRect;
 
@@ -183,6 +184,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         private void ResolveFSR1(PostProcessRenderContext context) {
+
             if(computeShaderEASU == null || computeShaderRCAS == null) {
                 Init();
             }
@@ -193,11 +195,10 @@ namespace UnityEngine.Rendering.PostProcessing
             var cmd = context.command;
             cmd.BeginSample("FSR1");
 
-            var camera = context.camera;
-
-            if(outputImage == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode) {
+            if(outputImage == null || outputImage2 == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode || Sharpening != _prevSharpening) {
                 _prevQualityMode = qualityMode;
                 _prevDisplaySize = _displaySize;
+                _prevSharpening = Sharpening;
 
                 scaleFactor = GetScaling();
 
@@ -255,11 +256,11 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.DispatchCompute(computeShaderRCAS, 0, dispatchX, dispatchY, 1); //main
             }
 
-            if(Sharpening) {
-                cmd.BlitFullscreenTriangle(Sharpening ? outputImage2 : outputImage, context.destination, false, new Rect(0f, 0f, displaySize.x, displaySize.y));
-            } else {
-                cmd.Blit(context.source, context.destination);
-            }
+            //if(Sharpening) {
+            cmd.BlitFullscreenTriangle(Sharpening ? outputImage2 : outputImage, context.destination, false, new Rect(0f, 0f, displaySize.x, displaySize.y));
+            //} else {
+            //    cmd.Blit(context.source, context.destination);
+            //}
             cmd.EndSample("FSR1");
         }
         private float GetScaling() {

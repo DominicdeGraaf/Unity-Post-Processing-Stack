@@ -771,17 +771,23 @@ namespace UnityEngine.Rendering.PostProcessing
             {
 #if TND_FSR1 || AEG_FSR1
                 // Ensure all of FSR3's resources are released when it's not in use
-                fsr1.Release();
+                if(context.camera.cameraType == CameraType.Game) {
+                    fsr1.Release();
+                }
 #endif
 #if TND_FSR3 || TND_FSR3
                 // Ensure all of FSR3's resources are released when it's not in use
-                fsr3.Release();
+                if(context.camera.cameraType == CameraType.Game) {
+                    fsr3.Release();
+                }
 #endif
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
                 // Ensure all of DLSS's resources are released when it's not in use
-                dlss.Release();
+                if(context.camera.cameraType == CameraType.Game) {
+                    dlss.Release();
+                }
 #endif
-                if (m_originalTargetTexture != null)
+                if(m_originalTargetTexture != null)
                 {
                     m_Camera.targetTexture = m_originalTargetTexture;
                     m_originalTargetTexture = null;
