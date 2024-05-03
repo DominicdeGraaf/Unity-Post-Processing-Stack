@@ -196,6 +196,9 @@ namespace UnityEngine.Rendering.PostProcessing
             var camera = context.camera;
 
             if(outputImage == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode) {
+                _prevQualityMode = qualityMode;
+                _prevDisplaySize = _displaySize;
+
                 scaleFactor = GetScaling();
 
                 m_mipMapTimer = Mathf.Infinity;
