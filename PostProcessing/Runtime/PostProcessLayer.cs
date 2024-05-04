@@ -744,7 +744,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             else if (context.IsFSR3Active())
             {
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
                 if(!fsr3.IsSupported())
                 {
                     antialiasingMode = fsr3.fallBackAA;
