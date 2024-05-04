@@ -358,7 +358,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     fsr1.ResetCameraViewport(m_CurrentContext);
                 }
 #endif
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
                 if(m_CurrentContext.IsFSR3Active())
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
@@ -522,7 +522,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 fsr1.Release();
             }
 #endif
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
             if(m_CurrentContext.IsFSR3Active())
             {
                 fsr3.Release();
@@ -775,7 +775,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     fsr1.Release();
                 }
 #endif
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
                 // Ensure all of FSR3's resources are released when it's not in use
                 if(context.camera.cameraType == CameraType.Game) {
                     fsr3.Release();
@@ -884,7 +884,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.ReleaseTemporaryRT(srcTarget);
             }
 
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
             // Create a copy of the opaque-only color buffer for auto-reactive mask generation
             if(context.IsFSR3Active() && (fsr3.autoGenerateReactiveMask || fsr3.autoGenerateTransparencyAndComposition))
             {
@@ -935,7 +935,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = m_upscaledOutput;
             }
 #endif
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
             if(!finalBlitToCameraTarget && m_CurrentContext.IsFSR3Active())
             {
                 var displaySize = fsr3.displaySize;
@@ -996,7 +996,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 fsr1.ResetCameraViewport(m_CurrentContext);
             }
 #endif
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
             // Set the camera back to its original parameters, so we can output at full display resolution
             if(finalBlitToCameraTarget && m_CurrentContext.IsFSR3Active())
             {
@@ -1444,7 +1444,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
                 else if (context.IsFSR3Active())
                 {
-#if TND_FSR3 || TND_FSR3
+#if TND_FSR3 || AEG_FSR3
                     fsr3.ConfigureJitteredProjectionMatrix(context);
 
                     // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
