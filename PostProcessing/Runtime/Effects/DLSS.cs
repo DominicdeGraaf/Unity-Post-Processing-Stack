@@ -1,16 +1,21 @@
-
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 
-
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if (TND_DLSS) 
 using TND.DLSS;
+#else
+using AEG.DLSS;
+#endif
+
 using UnityEngine.NVIDIA;
+
+#if (TND_DLSS) 
 using static TND.DLSS.DLSS_UTILS;
+#else
+using static AEG.DLSS.DLSS_UTILS;
+#endif
+
 using NVIDIA = UnityEngine.NVIDIA;
 #else
 public enum DLSS_Quality
@@ -106,15 +111,24 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
         public void OnMipMapAllTextures() {
+#if(TND_DLSS)
             TND.DLSS.DLSS_UTILS.OnMipMapAllTextures(m_mipMapBias);
+#else
+            AEG.DLSS.DLSS_UTILS.OnMipMapAllTextures(m_mipMapBias);
+#endif
         }
 
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
         public void OnResetAllMipMaps() {
+#if(TND_DLSS)
             TND.DLSS.DLSS_UTILS.OnResetAllMipMaps();
-        } 
+#else
+            AEG.DLSS.DLSS_UTILS.OnResetAllMipMaps();
+#endif
+
+        }
 
         public DepthTextureMode GetCameraFlags() {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
@@ -211,8 +225,13 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_renderWidth = Mathf.RoundToInt(_displaySize.x / _upscaleRatio);
                 m_renderHeight = Mathf.RoundToInt(_displaySize.y / _upscaleRatio);
 
+#if(TND_DLSS)
                 dlssData.inputRes = new TND.DLSS.DLSS_UTILS.Resolution() { width = m_renderWidth, height = m_renderHeight };
                 dlssData.outputRes = new TND.DLSS.DLSS_UTILS.Resolution() { width = _displaySize.x, height = _displaySize.y };
+#else
+                dlssData.inputRes = new AEG.DLSS.DLSS_UTILS.Resolution() { width = m_renderWidth, height = m_renderHeight };
+                dlssData.outputRes = new AEG.DLSS.DLSS_UTILS.Resolution() { width = _displaySize.x, height = _displaySize.y };
+#endif
 
                 m_dlssInput = new RenderTexture(m_renderWidth, m_renderHeight, 0, context.camera.allowHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
                 m_dlssInput.enableRandomWrite = false;
