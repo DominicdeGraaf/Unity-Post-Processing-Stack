@@ -29,11 +29,11 @@
 
 #ifdef MSAA
 // Output textures
+RWTexture2D<float2> DS4x;
+RWTexture2DArray<float2> DS4xAtlas;
 RWTexture2D<float2> LinearZ;
 RWTexture2D<float2> DS2x;
 RWTexture2DArray<float2> DS2xAtlas;
-RWTexture2D<float2> DS4x;
-RWTexture2DArray<float2> DS4xAtlas;
 
 // Input textures
 Texture2D<float4> Depth;
@@ -42,11 +42,11 @@ Texture2D<float4> Depth;
 groupshared float2 g_CacheW[256];
 #else
 // Output textures
+RWTexture2D<float> DS4x;
+RWTexture2DArray<float> DS4xAtlas;
 RWTexture2D<float> LinearZ;
 RWTexture2D<float> DS2x;
 RWTexture2DArray<float> DS2xAtlas;
-RWTexture2D<float> DS4x;
-RWTexture2DArray<float> DS4xAtlas;
 
 // Input textures
 Texture2D<float> Depth;
@@ -56,7 +56,7 @@ groupshared float g_CacheW[256];
 #endif
 
 CBUFFER_START(CB0)
-    float4 ZBufferParams;
+float4 ZBufferParams;
 CBUFFER_END
 
 #ifdef MSAA
@@ -85,7 +85,8 @@ float Linearize(uint2 st)
 #ifdef UNITY_REVERSED_Z
     if (depth == 0) dist = 1e5;
 #else
-    if (depth == 1) dist = 1e5;
+    if (depth == 1)
+        dist = 1e5;
 #endif
     LinearZ[st] = dist;
     return dist;
@@ -104,8 +105,8 @@ void main(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_Group
 {
     uint2 startST = Gid.xy << 4 | GTid.xy;
     uint destIdx = GTid.y << 4 | GTid.x;
-    g_CacheW[destIdx +  0 ] = Linearize(startST | uint2(0, 0));
-    g_CacheW[destIdx +  8 ] = Linearize(startST | uint2(8, 0));
+    g_CacheW[destIdx + 0] = Linearize(startST | uint2(0, 0));
+    g_CacheW[destIdx + 8] = Linearize(startST | uint2(8, 0));
     g_CacheW[destIdx + 128] = Linearize(startST | uint2(0, 8));
     g_CacheW[destIdx + 136] = Linearize(startST | uint2(8, 8));
 
@@ -113,16 +114,15 @@ void main(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_Group
 
     uint ldsIndex = (GTid.x << 1) | (GTid.y << 5);
 
-    #ifdef MSAA
+#ifdef MSAA
     float2 w1 = g_CacheW[ldsIndex];
-    #else
+#else
     float w1 = g_CacheW[ldsIndex];
-    #endif
+#endif
     uint2 st = DTid.xy;
     uint slice = ((st.x & 3) | (st.y << 2)) & 15;
     DS2x[st] = w1;
     DS2xAtlas[uint3(st >> 2, slice)] = w1;
-
     if ((GI & 011) == 0)
     {
         st = DTid.xy >> 1;
@@ -130,7 +130,6 @@ void main(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_Group
         DS4x[st] = w1;
         DS4xAtlas[uint3(st >> 2, slice)] = w1;
     }
-
 }
 
 #endif

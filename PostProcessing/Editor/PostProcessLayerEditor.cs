@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using UnityEditorInternal;
 using System.IO;
+using System.Data.SqlTypes;
 
 namespace UnityEditor.Rendering.PostProcessing
 {
@@ -78,14 +79,23 @@ namespace UnityEditor.Rendering.PostProcessing
         //DLSS
         SerializedProperty m_DLSSQualityMode;
         SerializedProperty m_DLSSFallBack;
+        SerializedProperty m_DLSSAntiGhosting;
 
         SerializedProperty m_DLSSAutoTextureUpdate;
         SerializedProperty m_DLSSUpdateFrequency;
         SerializedProperty m_DLSSMipmapBiasOverride;
 
+        //XeSS
 
+        SerializedProperty m_XeSSQualityMode;
+        SerializedProperty m_XeSSFallBack;
+        SerializedProperty m_XeSSAntiGhosting;
+        SerializedProperty m_XeSSSharpness;
+        SerializedProperty m_XeSSSharpening;
 
-        SerializedProperty m_DLSSAntiGhosting;
+        SerializedProperty m_XeSSAutoTextureUpdate;
+        SerializedProperty m_XeSSUpdateFrequency;
+        SerializedProperty m_XeSSMipmapBiasOverride;
 
         SerializedProperty m_FogEnabled;
         SerializedProperty m_FogExcludeSkybox;
@@ -108,11 +118,12 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
             new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
             new GUIContent("FidelityFX Super Resolution 3 (FSR3)"),
-            new GUIContent("Deep Learning Super Sampling (DLSS)")
+            new GUIContent("Deep Learning Super Sampling (DLSS)"),
+            new GUIContent("Xe Super Sampling (XeSS)"),
         };
 
         static GUIContent[] s_AntialiasingDLSSFallBackMethodNames =
-       {
+        {
             new GUIContent("No Anti-aliasing"),
             new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
@@ -120,6 +131,19 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
             new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
             new GUIContent("FidelityFX Super Resolution 3 (FSR3)"),
+            new GUIContent("Xe Super Sampling (XeSS)"),
+        };
+
+        static GUIContent[] s_AntialiasingXeSSFallBackMethodNames =
+        {
+            new GUIContent("No Anti-aliasing"),
+            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
+            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
+            new GUIContent("Temporal Anti-aliasing (TAA)"),
+            new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
+            new GUIContent("FidelityFX Super Resolution 3 (FSR3)"),
+            new GUIContent("Deep Learning Super Sampling (DLSS)"),
         };
 
         static GUIContent[] s_AntialiasingFSR3FallBackMethodNames =
@@ -226,10 +250,22 @@ namespace UnityEditor.Rendering.PostProcessing
             m_DLSSUpdateFrequency = FindProperty(x => x.dlss.UpdateFrequency);
             m_DLSSMipmapBiasOverride = FindProperty(x => x.dlss.MipmapBiasOverride);
 #endif
+#if TND_XeSS
+            m_XeSSQualityMode = FindProperty(x => x.xess.qualityMode);
+            m_XeSSAntiGhosting = FindProperty(x => x.xess.antiGhosting);
+            m_XeSSSharpening = FindProperty(x => x.xess.sharpening);
+            m_XeSSSharpness = FindProperty(x => x.xess.sharpness);
+
+            m_XeSSAutoTextureUpdate = FindProperty(x => x.xess.autoTextureUpdate);
+            m_XeSSUpdateFrequency = FindProperty(x => x.xess.updateFrequency);
+            m_XeSSMipmapBiasOverride = FindProperty(x => x.xess.mipmapBiasOverride);
+
+#endif
             m_SGSRFallBack = FindProperty(x => x.sgsr.fallBackAA);
             m_FSR1FallBack = FindProperty(x => x.fsr1.fallBackAA);
             m_FSR3FallBack = FindProperty(x => x.fsr3.fallBackAA);
             m_DLSSFallBack = FindProperty(x => x.dlss.fallBackAA);
+            m_XeSSFallBack = FindProperty(x => x.xess.fallBackAA); 
 
             m_FogEnabled = FindProperty(x => x.fog.enabled);
             m_FogExcludeSkybox = FindProperty(x => x.fog.excludeSkybox);
@@ -343,7 +379,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.SGSR)
                 {
                     EditorGUI.indentLevel++;
-                    m_SGSRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 3 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSRFallBack.intValue, s_AntialiasingSGSRFallBackMethodNames);
+                    m_SGSRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when SGSR is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSRFallBack.intValue, s_AntialiasingSGSRFallBackMethodNames);
                     EditorGUI.indentLevel--;
 #if TND_SGSR
                     EditorGUILayout.PropertyField(m_SGSRQualityMode);
@@ -376,7 +412,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 }
                 else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR1) {
                     EditorGUI.indentLevel++;
-                    m_FSR1FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 3 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR1FallBack.intValue, s_AntialiasingFSR1FallBackMethodNames);
+                    m_FSR1FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when FSR 1 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR1FallBack.intValue, s_AntialiasingFSR1FallBackMethodNames);
                     EditorGUI.indentLevel--;
 #if TND_FSR1 || AEG_FSR1
                     EditorGUILayout.PropertyField(m_FSR1QualityMode);
@@ -414,7 +450,7 @@ namespace UnityEditor.Rendering.PostProcessing
 #endif
                 } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR3) {
                     EditorGUI.indentLevel++;
-                    m_FSR3FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 3 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR3FallBack.intValue, s_AntialiasingFSR3FallBackMethodNames);
+                    m_FSR3FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when FSR 3 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR3FallBack.intValue, s_AntialiasingFSR3FallBackMethodNames);
                     EditorGUI.indentLevel--;
 
 #if TND_FSR3 || AEG_FSR3
@@ -455,7 +491,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.LabelField("----- DLSS is not supported on this platform ------", EditorStyles.boldLabel);
 #endif
                     EditorGUI.indentLevel++;
-                    m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use with FSR 1, FSR 3 or DLSS are not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingDLSSFallBackMethodNames);
+                    m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when DLSS is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingDLSSFallBackMethodNames);
                     EditorGUI.indentLevel--;
 
 #if !DLSS_INSTALLED
@@ -481,6 +517,37 @@ namespace UnityEditor.Rendering.PostProcessing
 #else
                     EditorGUILayout.LabelField(EditorUtilities.GetContent("----- DLSS Package not loaded ------"), EditorStyles.boldLabel);
 #endif
+#endif
+                } else if(m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.XeSS)
+                {
+#if !UNITY_STANDALONE_WIN || !UNITY_64
+                    EditorGUILayout.LabelField("----- XeSS is not supported on this platform ------", EditorStyles.boldLabel);
+#endif
+                    EditorGUI.indentLevel++;
+                    m_XeSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when XeSS is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_XeSSFallBack.intValue, s_AntialiasingXeSSFallBackMethodNames);
+                    EditorGUI.indentLevel--;
+#if TND_XeSS
+
+                    EditorGUILayout.PropertyField(m_XeSSQualityMode);
+                    EditorGUILayout.PropertyField(m_XeSSAntiGhosting);
+                    EditorGUILayout.PropertyField(m_XeSSSharpening);
+                    if (m_XeSSSharpening.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_XeSSSharpness);
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUILayout.PropertyField(m_XeSSAutoTextureUpdate);
+                    if (m_XeSSAutoTextureUpdate.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_XeSSUpdateFrequency);
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.PropertyField(m_XeSSMipmapBiasOverride);
+#else
+                    EditorGUILayout.LabelField(EditorUtilities.GetContent("----- XeSS Package not loaded ------"), EditorStyles.boldLabel);
 #endif
                 }
             }

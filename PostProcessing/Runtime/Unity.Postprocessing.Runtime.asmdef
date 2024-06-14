@@ -6,7 +6,8 @@
         "com.thenakeddev.dlss.Runtime",
         "com.thenakeddev.sgsr.Runtime",
         "com.alteregogames.aeg-fsr.Runtime",
-        "com.alteregogames.aeg-dlss.Runtime"
+        "com.alteregogames.aeg-dlss.Runtime",
+        "com.thenakeddev.xess.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

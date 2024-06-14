@@ -71,6 +71,11 @@ namespace UnityEngine.Rendering.PostProcessing
             /// Deep Learning Super Sampling  (DLSS).
             /// </summary>
             DLSS,
+
+            /// <summary>
+            /// Xe Super Sampling (XeSS).
+            /// </summary>
+            XeSS,
         }
 
         /// <summary>
@@ -132,6 +137,11 @@ namespace UnityEngine.Rendering.PostProcessing
         /// DLSS upscaling & anti-aliasing settings for this camera.
         /// </summary>
         public DLSS dlss;
+
+        /// <summary>
+        /// XeSS upscaling & anti-aliasing settings for this camera.
+        /// </summary>
+        public XeSS xess;
 
         /// <summary>
         /// Subpixel Morphological Anti-aliasing settings for this camera.
@@ -323,7 +333,9 @@ namespace UnityEngine.Rendering.PostProcessing
 #if UNITY_2019_1_OR_NEWER
         // We always use a CommandBuffer to blit to the final render target
         // OnRenderImage is used only to avoid the automatic blit from the RenderTexture of Camera.forceIntoRenderTexture to the actual target
+#if !UNITY_EDITOR
         [ImageEffectUsesCommandBuffer]
+#endif
         void OnRenderImage(RenderTexture src, RenderTexture dst)
         {
             if (m_opaqueOnly != null)
@@ -332,17 +344,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_opaqueOnly = null;
             }
 
-            if (m_CurrentContext.IsFSR3Active())
+            if (m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive())
             {
                 RuntimeUtilities.AllowDynamicResolution = true;
             }
 
-            if (m_CurrentContext.IsDLSSActive())
-            {
-                RuntimeUtilities.AllowDynamicResolution = true;
-            }
-
-            if (!finalBlitToCameraTarget && (m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive()))
+            if (!finalBlitToCameraTarget && (m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive()))
             {
 #if TND_SGSR
                 if (m_CurrentContext.IsSGSRActive())
@@ -366,11 +373,19 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
 
 #endif
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if(TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
                 if(m_CurrentContext.IsDLSSActive()) {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     dlss.ResetCameraViewport(m_CurrentContext);
                 }
+#endif
+#if TND_XeSS
+                if (m_CurrentContext.IsXeSSActive())
+                {
+                    // Set the camera back to its original parameters, so we can output at full display resolution
+                    xess.ResetCameraViewport(m_CurrentContext);
+                }
+
 #endif
                 // Blit the upscaled image to the backbuffer
                 if (m_originalTargetTexture != null)
@@ -411,9 +426,11 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_Resources = resources;
 
             RuntimeUtilities.CreateIfNull(ref temporalAntialiasing);
+            RuntimeUtilities.CreateIfNull(ref sgsr);
             RuntimeUtilities.CreateIfNull(ref fsr1);
             RuntimeUtilities.CreateIfNull(ref fsr3);
             RuntimeUtilities.CreateIfNull(ref dlss);
+            RuntimeUtilities.CreateIfNull(ref xess);
             RuntimeUtilities.CreateIfNull(ref subpixelMorphologicalAntialiasing);
             RuntimeUtilities.CreateIfNull(ref fastApproximateAntialiasing);
             RuntimeUtilities.CreateIfNull(ref dithering);
@@ -533,6 +550,13 @@ namespace UnityEngine.Rendering.PostProcessing
                 dlss.Release();
             }
 #endif
+#if TND_XeSS
+            if (m_CurrentContext.IsXeSSActive())
+            {
+                xess.ReleaseResources();
+            }
+#endif
+
             m_LogHistogram.Release();
 
             foreach (var bundle in m_Bundles.Values)
@@ -561,7 +585,7 @@ namespace UnityEngine.Rendering.PostProcessing
         void LateUpdate()
         {
             // Temporarily take control of the camera's target texture, so that the upscaled output doesn't get clipped
-            if (m_Camera.targetTexture != null && (m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive()))
+            if (m_Camera.targetTexture != null && (m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive()))
             {
                 m_originalTargetTexture = m_Camera.targetTexture;
                 m_Camera.targetTexture = null;
@@ -600,7 +624,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // We also need to force reset the non-jittered projection matrix here as it's not done
             // when ResetProjectionMatrix() is called and will break transparent rendering if TAA
             // is switched off and the FOV or any other camera property changes.
-            if (m_CurrentContext.IsTemporalAntialiasingActive() || m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive())
+            if (m_CurrentContext.IsTemporalAntialiasingActive() || m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive())
             {
 #if UNITY_2018_2_OR_NEWER
                 if (!m_Camera.usePhysicalProperties)
@@ -629,6 +653,8 @@ namespace UnityEngine.Rendering.PostProcessing
                     }
 #endif
                 }
+            } else {
+                m_Camera.nonJitteredProjectionMatrix = m_Camera.projectionMatrix;
             }
 
 #if(ENABLE_VR_MODULE && ENABLE_VR)
@@ -767,26 +793,37 @@ namespace UnityEngine.Rendering.PostProcessing
                 antialiasingMode = dlss.fallBackAA;
 #endif
             }
+            else if (context.IsXeSSActive())
+            {
+#if TND_XeSS
+                if(!xess.IsSupported())
+                {
+                    antialiasingMode = xess.fallBackAA;
+                }
+                xess.ConfigureCameraViewport(context);
+                context.SetRenderSize(xess.renderSize);
+#else
+                antialiasingMode = xess.fallBackAA;
+#endif
+            }
             else
             {
+                // Ensure all upscaler resources are released when it's not in use
+                if (context.camera.cameraType == CameraType.Game)
+                {
 #if TND_FSR1 || AEG_FSR1
-                // Ensure all of FSR3's resources are released when it's not in use
-                if(context.camera.cameraType == CameraType.Game) {
                     fsr1.Release();
-                }
 #endif
 #if TND_FSR3 || AEG_FSR3
-                // Ensure all of FSR3's resources are released when it's not in use
-                if(context.camera.cameraType == CameraType.Game) {
                     fsr3.Release();
-                }
 #endif
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
-                // Ensure all of DLSS's resources are released when it's not in use
-                if(context.camera.cameraType == CameraType.Game) {
                     dlss.Release();
-                }
 #endif
+#if TND_XeSS
+                    xess.ReleaseResources();
+#endif
+                }
                 if(m_originalTargetTexture != null)
                 {
                     m_Camera.targetTexture = m_originalTargetTexture;
@@ -815,7 +852,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
 #if UNITY_2019_1_OR_NEWER
             if (context.stereoActive)
-                context.UpdateSinglePassStereoState(context.IsTemporalAntialiasingActive() || context.IsFSR3Active() || context.IsDLSSActive(), aoSupported, isScreenSpaceReflectionsActive);
+                context.UpdateSinglePassStereoState(context.IsTemporalAntialiasingActive() || context.IsFSR3Active() || context.IsDLSSActive() || context.IsXeSSActive(), aoSupported, isScreenSpaceReflectionsActive);
 #endif
             // Ambient-only AO is a special case and has to be done in separate command buffers
             if (isAmbientOcclusionDeferred)
@@ -951,6 +988,14 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = m_upscaledOutput;
             }
 #endif
+#if TND_XeSS
+            if (!finalBlitToCameraTarget && m_CurrentContext.IsXeSSActive())
+            {
+                var displaySize = xess.displaySize;
+                m_upscaledOutput = context.GetScreenSpaceTemporaryRT(widthOverride: displaySize.x, heightOverride: displaySize.y);
+                context.destination = m_upscaledOutput;
+            }
+#endif
 
 
 
@@ -1010,8 +1055,15 @@ namespace UnityEngine.Rendering.PostProcessing
                 dlss.ResetCameraViewport(m_CurrentContext);
             }
 #endif
+#if TND_XeSS
+            // Set the camera back to its original parameters, so we can output at full display resolution
+            if (finalBlitToCameraTarget && m_CurrentContext.IsXeSSActive())
+            {
+                xess.ResetCameraViewport(m_CurrentContext);
+            }
+#endif
 
-            if (m_CurrentContext.IsTemporalAntialiasingActive() || m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive())
+            if (m_CurrentContext.IsTemporalAntialiasingActive() || m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive())
             {
 #if UNITY_2018_2_OR_NEWER
                 // TAA calls SetProjectionMatrix so if the camera projection mode was physical, it gets set to explicit. So we set it back to physical.
@@ -1138,6 +1190,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if(context.IsDLSSActive())
                 flags |= dlss.GetCameraFlags();
 #endif
+#if TND_XeSS
+            if (context.IsXeSSActive())
+                flags |= xess.GetCameraFlags();
+#endif
 
             if (fog.IsEnabledAndSupported(context))
                 flags |= fog.GetCameraFlags();
@@ -1227,6 +1283,7 @@ namespace UnityEngine.Rendering.PostProcessing
             context.superResolution1 = fsr1;
             context.superResolution3 = fsr3;
             context.deepLearningSuperSampling = dlss;
+            context.xeSuperSampling = xess;
             context.logHistogram = m_LogHistogram;
 
 #if UNITY_2018_2_OR_NEWER
@@ -1471,17 +1528,17 @@ namespace UnityEngine.Rendering.PostProcessing
                 else if (context.IsDLSSActive())
                 {
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
-                    this.dlss.ConfigureJitteredProjectionMatrix(context);
+                    dlss.ConfigureJitteredProjectionMatrix(context);
 
                     // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
-                    context.SetRenderSize(this.dlss.displaySize);
+                    context.SetRenderSize(dlss.displaySize);
 
-                    var dlss = m_TargetPool.Get();
+                    var dlssTarget = m_TargetPool.Get();
                     var finalDestination = context.destination;
-                    context.GetScreenSpaceTemporaryRT(cmd, dlss, 0, context.sourceFormat, isUpscaleOutput: true);
-                    context.destination = dlss;
-                    this.dlss.Render(context);
-                    context.source = dlss;
+                    context.GetScreenSpaceTemporaryRT(cmd, dlssTarget, 0, context.sourceFormat, isUpscaleOutput: true);
+                    context.destination = dlssTarget;
+                    dlss.Render(context);
+                    context.source = dlssTarget;
                     context.destination = finalDestination;
 
                     // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
@@ -1490,7 +1547,32 @@ namespace UnityEngine.Rendering.PostProcessing
                     if(lastTarget > -1)
                         cmd.ReleaseTemporaryRT(lastTarget);
 
-                    lastTarget = dlss;
+                    lastTarget = dlssTarget;
+#endif
+                }
+                else if (context.IsXeSSActive())
+                {
+#if TND_XeSS
+                    xess.ConfigureJitteredProjectionMatrix(context);
+
+                    // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
+                    context.SetRenderSize(xess.displaySize);
+
+                    var xessTarget = m_TargetPool.Get();
+                    var finalDestination = context.destination;
+                    context.GetScreenSpaceTemporaryRT(cmd, xessTarget, 0, context.sourceFormat, isUpscaleOutput: true);
+                    context.destination = xessTarget;
+                    xess.Render(context);
+                    context.source = xessTarget;
+                    context.destination = finalDestination;
+
+                    // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
+                    RuntimeUtilities.AllowDynamicResolution = false;
+
+                    if (lastTarget > -1)
+                        cmd.ReleaseTemporaryRT(lastTarget);
+
+                    lastTarget = xessTarget;
 #endif
                 }
 

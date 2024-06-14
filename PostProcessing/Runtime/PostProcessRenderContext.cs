@@ -309,6 +309,14 @@ namespace UnityEngine.Rendering.PostProcessing
             get; internal set;
         }
 
+        /// <summary>
+        /// A reference to the DLSS settings for the rendering layer.
+        /// </summary>
+        public XeSS xeSuperSampling 
+        {
+            get; internal set;
+        }
+
         // Internal values used for builtin effects
         // Beware, these may not have been set before a specific builtin effect has been executed
         internal PropertySheet uberSheet;
@@ -395,6 +403,13 @@ namespace UnityEngine.Rendering.PostProcessing
 
         public bool IsDLSSActive() {
             return antialiasing == PostProcessLayer.Antialiasing.DLSS
+               && Application.isPlaying
+               && !isSceneView;
+        }
+
+        public bool IsXeSSActive()
+        {
+            return antialiasing == PostProcessLayer.Antialiasing.XeSS
                && Application.isPlaying
                && !isSceneView;
         }

@@ -16,8 +16,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedParameterOverride m_SpeedUp;
         SerializedParameterOverride m_SpeedDown;
 
-        public override void OnEnable()
-        {
+        public override void OnEnable() {
             m_Filtering = FindParameterOverride(x => x.filtering);
 
             m_MinLuminance = FindParameterOverride(x => x.minLuminance);
@@ -29,10 +28,14 @@ namespace UnityEditor.Rendering.PostProcessing
             m_SpeedDown = FindParameterOverride(x => x.speedDown);
         }
 
-        public override void OnInspectorGUI()
-        {
-            if (!SystemInfo.supportsComputeShaders)
-                EditorGUILayout.HelpBox("Auto exposure requires compute shader support.", MessageType.Warning);
+        public override void OnInspectorGUI() {
+            if(!SystemInfo.supportsComputeShaders) {
+                EditorGUILayout.HelpBox("Auto exposure requires compute shader support which is not available on this platform.", MessageType.Error);
+            } else if(EditorUtilities.isTargetingWebGL) {
+                EditorGUILayout.HelpBox("Auto exposure requires compute shader support (WebGPU) when running on Web.", MessageType.Warning);
+            } else if(EditorUtilities.isTargetingAndroid) {
+                EditorGUILayout.HelpBox("Auto exposure requires compute shader support (Vulkan) when running on Android.", MessageType.Warning);
+            }
 
             EditorUtilities.DrawHeaderLabel("Exposure");
 
@@ -53,8 +56,7 @@ namespace UnityEditor.Rendering.PostProcessing
 
             PropertyField(m_EyeAdaptation);
 
-            if (m_EyeAdaptation.value.intValue == (int)EyeAdaptation.Progressive)
-            {
+            if(m_EyeAdaptation.value.intValue == (int)EyeAdaptation.Progressive) {
                 PropertyField(m_SpeedUp);
                 PropertyField(m_SpeedDown);
             }

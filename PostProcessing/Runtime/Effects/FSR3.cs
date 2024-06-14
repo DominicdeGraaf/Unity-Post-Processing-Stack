@@ -215,12 +215,14 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         public void Render(PostProcessRenderContext context) {
+      
             var cmd = context.command;
             if(qualityMode == Fsr3.QualityMode.Off) {
                 cmd.Blit(context.source, context.destination);
                 return;
             }
 
+         
             cmd.BeginSample("FSR3");
 
             // Monitor for any resolution changes and recreate the FSR3 context if necessary

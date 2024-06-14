@@ -8,6 +8,7 @@ using TND.SGSR;
 public enum SGSR_Quality
 {
     Off,
+    Native,
     Quality,
     Balanced,
     Performance,
@@ -23,6 +24,8 @@ namespace UnityEngine.Rendering.PostProcessing
     {
         public enum SGSR_Quality
         {
+            Off,
+            Native,
             Quality,
             Balanced,
             Performance,
@@ -55,8 +58,7 @@ namespace UnityEngine.Rendering.PostProcessing
         private float _prevMipMapBias;
         private float _mipMapTimer = float.MaxValue;
 
-        public bool IsSupported()
-        {
+        public bool IsSupported() {
             return BlitMaterial.shader.isSupported;
         }
 
@@ -64,8 +66,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipmapSingleTexture(Texture texture)
-        {
+        public void OnMipmapSingleTexture(Texture texture) {
             texture.mipMapBias = _mipMapBias;
         }
 
@@ -73,20 +74,17 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates all textures currently loaded to the set MipMap Bias.
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipMapAllTextures()
-        {
+        public void OnMipMapAllTextures() {
             SGSR_UTILS.OnMipMapAllTextures(_mipMapBias);
         }
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
-        public void OnResetAllMipMaps()
-        {
+        public void OnResetAllMipMaps() {
             SGSR_UTILS.OnResetAllMipMaps();
         }
 
-        public void ConfigureCameraViewport(PostProcessRenderContext context)
-        {
+        public void ConfigureCameraViewport(PostProcessRenderContext context) {
             Camera camera = context.camera;
             _originalRect = camera.pixelRect;
 
@@ -98,19 +96,21 @@ namespace UnityEngine.Rendering.PostProcessing
             camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
         }
 
-        public void ResetCameraViewport(PostProcessRenderContext context)
-        {
+        public void ResetCameraViewport(PostProcessRenderContext context) {
             context.camera.pixelRect = _originalRect;
         }
 
-        public void Render(PostProcessRenderContext context)
-        {
-            if (autoTextureUpdate)
-            {
-                UpdateMipMaps(renderSize.x, displaySize.y);
-            }
+        public void Render(PostProcessRenderContext context) {
+          
 
             var cmd = context.command;
+            if(qualityMode == SGSR_Quality.Off) {
+                cmd.Blit(context.source, context.destination);
+                return;
+            }
+            if(autoTextureUpdate) {
+                UpdateMipMaps(renderSize.x, displaySize.y);
+            }
             cmd.BeginSample("SGSR");
 
             cmd.SetGlobalFloat(SGSR_UTILS.idEdgeSharpness, edgeSharpness);
@@ -125,10 +125,12 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.EndSample("SGSR");
         }
 
-        private float GetScaling()
-        {
-            switch (qualityMode)
-            {
+        private float GetScaling() {
+            switch(qualityMode) {
+                case SGSR_Quality.Off:
+                    return 1.0f;
+                case SGSR_Quality.Native:
+                    return 1.0f;
                 case SGSR_Quality.Quality:
                     return 1.5f;
                 case SGSR_Quality.Balanced:
@@ -148,17 +150,14 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <summary>
         /// Automatically updates the mipmap of all loaded textures
         /// </summary>
-        protected void UpdateMipMaps(float _renderWidth, float _displayWidth)
-        {
+        protected void UpdateMipMaps(float _renderWidth, float _displayWidth) {
             _mipMapTimer += Time.deltaTime;
 
-            if (_mipMapTimer > updateFrequency)
-            {
+            if(_mipMapTimer > updateFrequency) {
                 _mipMapTimer = 0;
 
                 _mipMapBias = (Mathf.Log(_renderWidth / _displayWidth, 2f) - 1) * mipmapBiasOverride;
-                if (_previousLength != Texture.currentTextureMemory || _prevMipMapBias != _mipMapBias)
-                {
+                if(_previousLength != Texture.currentTextureMemory || _prevMipMapBias != _mipMapBias) {
                     _prevMipMapBias = _mipMapBias;
                     _previousLength = Texture.currentTextureMemory;
 
@@ -173,8 +172,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             get
             {
-                if (_blitMaterial == null)
-                {
+                if(_blitMaterial == null) {
                     _blitMaterial = new Material(Shader.Find("Hidden/SGSR_BlitShader_BIRP"));
                 }
 
@@ -190,7 +188,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             get
             {
-                if (_fullscreenMesh != null)
+                if(_fullscreenMesh != null)
                     return _fullscreenMesh;
 
                 float topV = 1.0f;

@@ -1,6 +1,26 @@
-## [3.2.3] - 2023-08-29
+## [3.4.1] - 2023.03.19
 ### Added
-- Added support for DLSS
+Updated Licenses
+
+## [3.4.0] - 2023.12.11
+
+### Added
+Added WebGPU support
+
+### Fixed
+Fixed obsolete FormatUsage error
+Fixed non-scalar logical operation error
+Fixed MSVO to support platforms with limited storage texture support
+Fixed compute based effects not supported on WebGL and Android OpenGL (IN-2999)
+Fixed grid gizmo is visible through geometry when Post Process Layer is enabled (IN-10318)
+Fixed transparent objects rendering incorrectly when TAA is disabled (IN-31494)
+
+## [3.3.0] - 2023-05-11
+
+### Added
+Fixed some post effects not scaling correctly when dynamic resolution is enabled on a camera's target texture (case 1166603)
+Fixed obsolete API call GetScriptingDefineSymbolsForGroup
+Remove support for OpenGL ES 2.0 in Unity 2023.1 or newer
 
 ## [3.2.2] - 2022-04-05
 

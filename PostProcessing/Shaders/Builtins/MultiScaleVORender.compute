@@ -27,6 +27,12 @@
 #pragma kernel MultiScaleVORender_MSAA                      MAIN=MultiScaleVORender_MSAA                MSAA
 #pragma kernel MultiScaleVORender_MSAA_interleaved          MAIN=MultiScaleVORender_MSAA_interleaved    MSAA INTERLEAVE_RESULT
 
+#pragma kernel MultiScaleVORender_Float4                    MAIN=MultiScaleVORender_Float4                  FLOAT4
+#pragma kernel MultiScaleVORender_interleaved_Float4        MAIN=MultiScaleVORender_interleaved_Float4      INTERLEAVE_RESULT FLOAT4
+#pragma kernel MultiScaleVORender_MSAA_Float4               MAIN=MultiScaleVORender_MSAA_Float4             MSAA FLOAT4
+#pragma kernel MultiScaleVORender_MSAA_interleaved_Float4   MAIN=MultiScaleVORender_MSAA_interleaved_Float4 MSAA INTERLEAVE_RESULT FLOAT4
+
+
 #include "Packages/com.unity.postprocessing/PostProcessing/Shaders/StdLib.hlsl"
 
 #ifndef INTERLEAVE_RESULT
@@ -48,11 +54,11 @@
 
 #ifdef MSAA
     // Input Textures
-    #ifdef INTERLEAVE_RESULT
+#ifdef INTERLEAVE_RESULT
     Texture2DArray<float2> DepthTex;
-    #else
+#else
     Texture2D<float2> DepthTex;
-    #endif
+#endif
 
     // Output texture
     RWTexture2D<float2> Occlusion;
@@ -61,26 +67,30 @@
     groupshared float2 DepthSamples[TILE_DIM * TILE_DIM];
 #else
     // Input Textures
-    #ifdef INTERLEAVE_RESULT
+#ifdef INTERLEAVE_RESULT
     Texture2DArray<float> DepthTex;
-    #else
-    Texture2D<float> DepthTex;
-    #endif
+#else
+Texture2D<float> DepthTex;
+#endif
 
     // Output texture
-    RWTexture2D<float> Occlusion;
+#ifdef FLOAT4
+    RWTexture2D<unorm float4> Occlusion;
+#else
+RWTexture2D<float> Occlusion;
+#endif
 
     // Shared memory
-    groupshared float DepthSamples[TILE_DIM * TILE_DIM];
+groupshared float DepthSamples[TILE_DIM * TILE_DIM];
 #endif
 
 SamplerState samplerDepthTex;
 
 CBUFFER_START(CB1)
-    float4 gInvThicknessTable[3];
-    float4 gSampleWeightTable[3];
-    float4 gInvSliceDimension;
-    float3 AdditionalParams;
+float4 gInvThicknessTable[3];
+float4 gSampleWeightTable[3];
+float4 gInvSliceDimension;
+float3 AdditionalParams;
 CBUFFER_END
 
 #define gRejectFadeoff AdditionalParams.x

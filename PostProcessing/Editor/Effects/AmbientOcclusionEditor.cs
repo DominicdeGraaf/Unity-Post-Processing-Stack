@@ -49,8 +49,13 @@ namespace UnityEditor.Rendering.PostProcessing
             }
             else if (aoMode == (int)AmbientOcclusionMode.MultiScaleVolumetricObscurance)
             {
-                if (!SystemInfo.supportsComputeShaders)
-                    EditorGUILayout.HelpBox("Multi-scale volumetric obscurance requires compute shader support.", MessageType.Warning);
+                if(!SystemInfo.supportsComputeShaders) {
+                    EditorGUILayout.HelpBox("Multi-scale volumetric obscurance requires compute shader support which is not available on this platform.", MessageType.Error);
+                } else if(EditorUtilities.isTargetingWebGL) {
+                    EditorGUILayout.HelpBox("Multi-scale volumetric obscurance requires compute shader support (WebGPU) when running on Web.", MessageType.Warning);
+                } else if(EditorUtilities.isTargetingAndroid) {
+                    EditorGUILayout.HelpBox("Multi-scale volumetric obscurance requires compute shader support (Vulkan) when running on Android.", MessageType.Warning);
+                }
 
                 PropertyField(m_ThicknessModifier);
                 PropertyField(m_ZBias);

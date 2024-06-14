@@ -9,6 +9,7 @@
         "com.thenakeddev.dlss.Runtime",
         "com.thenakeddev.dlss.Editor",
         "com.thenakeddev.sgsr.Runtime",
+        "com.thenakeddev.xess.Runtime",
         "com.alteregogames.aeg-fsr.Runtime",
         "com.alteregogames.aeg-fsr.Editor",
         "com.alteregogames.aeg-dlss.Runtime",
