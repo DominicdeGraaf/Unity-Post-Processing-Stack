@@ -68,10 +68,10 @@ namespace UnityEngine.Rendering.PostProcessing
         public Fsr3.GenerateReactiveFlags flags = Fsr3.GenerateReactiveFlags.ApplyTonemap | Fsr3.GenerateReactiveFlags.ApplyThreshold | Fsr3.GenerateReactiveFlags.UseComponentsMax;
 
         [Header("MipMap Settings")]
-        public bool AutoTextureUpdate = true;
-        public float UpdateFrequency = 2;
+        public bool autoTextureUpdate = true;
+        public float updateFrequency = 2;
         [Range(0, 1)]
-        public float MipmapBiasOverride = 1f;
+        public float mipMapBiasOverride = 1f;
 
 
 
@@ -140,18 +140,17 @@ namespace UnityEngine.Rendering.PostProcessing
         private Rect _originalRect;
 
         //Mipmap variables
-        protected Texture[] m_allTextures;
-        protected ulong m_previousLength;
-        protected float m_mipMapBias;
-        protected float m_prevMipMapBias;
-        protected float m_mipMapTimer = float.MaxValue;
+        protected ulong _previousLength;
+        protected float _prevMipMapBias;
+        protected float _mipMapTimer = float.MaxValue;
 
         /// <summary>
         /// Resets the camera for the next frame, clearing all the buffers saved from previous frames in order to prevent artifacts.
         /// Should be called in or before PreRender oh the frame where the camera makes a jumpcut.
         /// Is automatically disabled the frame after.
         /// </summary>
-        public void OnResetCamera() {
+        public void OnResetCamera()
+        {
             _resetHistory = true;
         }
 
@@ -159,44 +158,59 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipmapSingleTexture(Texture texture) {
-            texture.mipMapBias = m_mipMapBias;
+        public void OnMipmapSingleTexture(Texture texture)
+        {
+            MipMapUtils.OnMipMapSingleTexture(texture, renderSize.x, displaySize.x, mipMapBiasOverride);
         }
 
         /// <summary>
         /// Updates all textures currently loaded to the set MipMap Bias.
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipMapAllTextures() {
-            _callbacks.OnMipMapAllTextures(m_mipMapBias);
+        public void OnMipMapAllTextures()
+        {
+            MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
-        public void OnResetAllMipMaps() {
-            _callbacks.OnResetAllMipMaps();
+        public void OnResetAllMipMaps()
+        {
+            MipMapUtils.OnResetAllMipMaps();
         }
 
-        public bool IsSupported() {
+        public bool IsSupported()
+        {
             return SystemInfo.supportsComputeShaders && SystemInfo.supportsMotionVectors;
         }
 
-        public DepthTextureMode GetCameraFlags() {
+        internal DepthTextureMode GetCameraFlags()
+        {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
-        public void Release() {
+        internal void Release()
+        {
             DestroyFsrContext();
         }
 
-        public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {
-            if(qualityMode == Fsr3.QualityMode.Off) {
+        internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
+        {
+            if (qualityMode == Fsr3.QualityMode.Off)
+            {
                 return;
             }
-            ApplyJitter(context.camera);
+            ApplyJitter(context.camera, context);
         }
 
-        public void ConfigureCameraViewport(PostProcessRenderContext context) {
+        public void ConfigureCameraViewport(PostProcessRenderContext context)
+        {
+            if (context.camera.stereoEnabled)
+            {
+                if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+                { return; }
+            }
+
             var camera = context.camera;
             _originalRect = camera.rect;
 
@@ -210,31 +224,36 @@ namespace UnityEngine.Rendering.PostProcessing
             camera.rect = new Rect(0, 0, _originalRect.width * _maxRenderSize.x / _displaySize.x, _originalRect.height * _maxRenderSize.y / _displaySize.y);
         }
 
-        public void ResetCameraViewport(PostProcessRenderContext context) {
+        internal void ResetCameraViewport(PostProcessRenderContext context)
+        {
             context.camera.rect = _originalRect;
         }
 
-        public void Render(PostProcessRenderContext context) {
-      
+        internal void Render(PostProcessRenderContext context)
+        {
+
             var cmd = context.command;
-            if(qualityMode == Fsr3.QualityMode.Off) {
+            if (qualityMode == Fsr3.QualityMode.Off)
+            {
                 cmd.Blit(context.source, context.destination);
                 return;
             }
 
-         
+
             cmd.BeginSample("FSR3");
 
             // Monitor for any resolution changes and recreate the FSR3 context if necessary
             // We can't create an FSR3 context without info from the post-processing context, so delay the initial setup until here
-            if(_fsrContext == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode || exposureSource != _prevExposureSource) {
+            if (_fsrContext == null || _displaySize.x != _prevDisplaySize.x || _displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode || exposureSource != _prevExposureSource)
+            {
                 DestroyFsrContext();
                 CreateFsrContext(context);
-                m_mipMapTimer = Mathf.Infinity;
+                _mipMapTimer = Mathf.Infinity;
             }
 
-            if(AutoTextureUpdate) {
-                UpdateMipMaps(context.camera.scaledPixelWidth, _displaySize.x);
+            if (autoTextureUpdate)
+            {
+                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
 
             cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputColor, context.source);
@@ -243,7 +262,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
             SetupDispatchDescription(context);
 
-            if(autoGenerateReactiveMask) {
+            if (autoGenerateReactiveMask)
+            {
                 SetupAutoReactiveDescription(context);
 
                 var scaledRenderSize = _genReactiveDescription.RenderSize;
@@ -259,26 +279,8 @@ namespace UnityEngine.Rendering.PostProcessing
             _resetHistory = false;
         }
 
-        /// <summary>
-        /// Automatically updates the mipmap of all loaded textures
-        /// </summary>
-        protected void UpdateMipMaps(float _renderWidth, float _displayWidth) {
-            m_mipMapTimer += Time.deltaTime;
-
-            if(m_mipMapTimer > UpdateFrequency) {
-                m_mipMapTimer = 0;
-
-                m_mipMapBias = (Mathf.Log(_renderWidth / _displayWidth, 2f) - 1) * MipmapBiasOverride;
-                if(m_previousLength != Texture.currentTextureMemory || m_prevMipMapBias != m_mipMapBias) {
-                    m_prevMipMapBias = m_mipMapBias;
-                    m_previousLength = Texture.currentTextureMemory;
-
-                    _callbacks.OnMipMapAllTextures(m_mipMapBias);
-                }
-            }
-        }
-
-        private void CreateFsrContext(PostProcessRenderContext context) {
+        private void CreateFsrContext(PostProcessRenderContext context)
+        {
             _prevQualityMode = qualityMode;
             _prevExposureSource = exposureSource;
             _prevDisplaySize = _displaySize;
@@ -287,33 +289,32 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Initialize FSR3 context
             Fsr3.InitializationFlags flags = 0;
-            if(context.camera.allowHDR)
+            if (context.camera.allowHDR)
                 flags |= Fsr3.InitializationFlags.EnableHighDynamicRange;
-            if(enableFP16)
+            if (enableFP16)
                 flags |= Fsr3.InitializationFlags.EnableFP16Usage;
-            if(exposureSource == ExposureSource.Auto)
+            if (exposureSource == ExposureSource.Auto)
                 flags |= Fsr3.InitializationFlags.EnableAutoExposure;
-            if(RuntimeUtilities.IsDynamicResolutionEnabled(context.camera))
+            if (RuntimeUtilities.IsDynamicResolutionEnabled(context.camera))
                 flags |= Fsr3.InitializationFlags.EnableDynamicResolution;
 
             _callbacks = callbacksFactory(context);
             _fsrContext = Fsr3.CreateContext(_displaySize, _maxRenderSize, _callbacks, flags);
         }
 
-        private void DestroyFsrContext() {
-            if(_fsrContext != null) {
+        private void DestroyFsrContext()
+        {
+            if (_fsrContext != null)
+            {
                 _fsrContext.Destroy();
                 _fsrContext = null;
             }
 
-            if(_callbacks != null) {
-                // Undo the current mipmap bias offset
-                _callbacks.OnResetAllMipMaps();
-                _callbacks = null;
-            }
+            MipMapUtils.OnResetAllMipMaps();
         }
 
-        private void ApplyJitter(Camera camera) {
+        private void ApplyJitter(Camera camera, PostProcessRenderContext context)
+        {
             var scaledRenderSize = GetScaledRenderSize(camera);
 
             // Perform custom jittering of the camera's projection matrix according to FSR3's recipe
@@ -329,15 +330,66 @@ namespace UnityEngine.Rendering.PostProcessing
             jitterY += UnityEngine.Random.Range(-0.001f * antiGhosting, 0.001f * antiGhosting);
 
 
-            var jitterTranslationMatrix = Matrix4x4.Translate(new Vector3(jitterX, jitterY, 0));
-            camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
-            camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
-            camera.useJitteredProjectionMatrixForTransparentRendering = true;
+            //var jitterTranslationMatrix = Matrix4x4.Translate(new Vector3(jitterX, jitterY, 0));
+            //camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
+            //camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
+            //camera.useJitteredProjectionMatrixForTransparentRendering = true;
+
+            if (camera.stereoEnabled)
+            {
+                // We only need to configure all of this once for stereo, during OnPreCull
+                if (camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
+                    ConfigureStereoJitteredProjectionMatrices(context, camera);
+            }
+            else
+            {
+                ConfigureJitteredProjectionMatrix(camera, jitterX, jitterY);
+            }
 
             jitter = new Vector2(jitterX, jitterY);
         }
 
-        private void SetupDispatchDescription(PostProcessRenderContext context) {
+        /// <summary>
+        /// Prepares the jittered and non jittered projection matrices.
+        /// </summary>
+        /// <param name="context">The current post-processing context.</param>
+        public void ConfigureJitteredProjectionMatrix(Camera camera, float jitterX, float jitterY)
+        {
+            var jitterTranslationMatrix = Matrix4x4.Translate(new Vector3(jitterX, jitterY, 0));
+            camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
+            camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
+            camera.useJitteredProjectionMatrixForTransparentRendering = true;
+        }
+
+        /// <summary>
+        /// Prepares the jittered and non jittered projection matrices for stereo rendering.
+        /// </summary>
+        /// <param name="context">The current post-processing context.</param>
+        // TODO: We'll probably need to isolate most of this for SRPs
+        public void ConfigureStereoJitteredProjectionMatrices(PostProcessRenderContext context, Camera camera)
+        {
+#if UNITY_2017_3_OR_NEWER
+            for (var eye = Camera.StereoscopicEye.Left; eye <= Camera.StereoscopicEye.Right; eye++)
+            {
+                // This saves off the device generated projection matrices as non-jittered
+                camera.CopyStereoDeviceProjectionMatrixToNonJittered(eye);
+                var originalProj = camera.GetStereoNonJitteredProjectionMatrix(eye);
+
+                // Currently no support for custom jitter func, as VR devices would need to provide
+                // original projection matrix as input along with jitter
+                var jitteredMatrix = RuntimeUtilities.GenerateJitteredProjectionMatrixFromOriginal(context, originalProj, jitter);
+                camera.SetStereoProjectionMatrix(eye, jitteredMatrix);
+            }
+
+            // jitter has to be scaled for the actual eye texture size, not just the intermediate texture size
+            // which could be double-wide in certain stereo rendering scenarios
+            jitter = new Vector2(jitter.x / context.screenWidth, jitter.y / context.screenHeight);
+            camera.useJitteredProjectionMatrixForTransparentRendering = true;
+#endif
+        }
+
+        private void SetupDispatchDescription(PostProcessRenderContext context)
+        {
             var camera = context.camera;
 
             // Set up the main FSR3 dispatch parameters
@@ -349,13 +401,13 @@ namespace UnityEngine.Rendering.PostProcessing
             _dispatchDescription.Reactive = null;
             _dispatchDescription.TransparencyAndComposition = null;
 
-            if(exposureSource == ExposureSource.Manual && exposure != null)
+            if (exposureSource == ExposureSource.Manual && exposure != null)
                 _dispatchDescription.Exposure = exposure;
-            if(exposureSource == ExposureSource.Unity)
+            if (exposureSource == ExposureSource.Unity)
                 _dispatchDescription.Exposure = context.autoExposureTexture;
-            if(reactiveMask != null)
+            if (reactiveMask != null)
                 _dispatchDescription.Reactive = reactiveMask;
-            if(transparencyAndCompositionMask != null)
+            if (transparencyAndCompositionMask != null)
                 _dispatchDescription.TransparencyAndComposition = transparencyAndCompositionMask;
 
             var scaledRenderSize = GetScaledRenderSize(context.camera);
@@ -377,7 +429,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Set up the parameters for the optional experimental auto-TCR feature
             _dispatchDescription.EnableAutoReactive = autoGenerateTransparencyAndComposition;
-            if(autoGenerateTransparencyAndComposition) {
+            if (autoGenerateTransparencyAndComposition)
+            {
                 _dispatchDescription.ColorOpaqueOnly = colorOpaqueOnly;
                 _dispatchDescription.AutoTcThreshold = generateTransparencyAndCompositionParameters.autoTcThreshold;
                 _dispatchDescription.AutoTcScale = generateTransparencyAndCompositionParameters.autoTcScale;
@@ -385,13 +438,15 @@ namespace UnityEngine.Rendering.PostProcessing
                 _dispatchDescription.AutoReactiveMax = generateTransparencyAndCompositionParameters.autoReactiveMax;
             }
 
-            if(SystemInfo.usesReversedZBuffer) {
+            if (SystemInfo.usesReversedZBuffer)
+            {
                 // Swap the near and far clip plane distances as FSR3 expects this when using inverted depth
                 (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
             }
         }
 
-        private void SetupAutoReactiveDescription(PostProcessRenderContext context) {
+        private void SetupAutoReactiveDescription(PostProcessRenderContext context)
+        {
             // Set up the parameters to auto-generate a reactive mask
             _genReactiveDescription.ColorOpaqueOnly = colorOpaqueOnly;
             _genReactiveDescription.ColorPreUpscale = null;
@@ -403,8 +458,9 @@ namespace UnityEngine.Rendering.PostProcessing
             _genReactiveDescription.Flags = flags;
         }
 
-        private Vector2Int GetScaledRenderSize(Camera camera) {
-            if(!RuntimeUtilities.IsDynamicResolutionEnabled(camera))
+        private Vector2Int GetScaledRenderSize(Camera camera)
+        {
+            if (!RuntimeUtilities.IsDynamicResolutionEnabled(camera))
                 return _maxRenderSize;
 
             return new Vector2Int(Mathf.CeilToInt(_maxRenderSize.x * ScalableBufferManager.widthScaleFactor), Mathf.CeilToInt(_maxRenderSize.y * ScalableBufferManager.heightScaleFactor));
@@ -414,16 +470,19 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             private readonly PostProcessResources _resources;
 
-            public Callbacks(PostProcessResources resources) {
+            public Callbacks(PostProcessResources resources)
+            {
                 _resources = resources;
             }
 
-            public override ComputeShader LoadComputeShader(string name) {
+            public override ComputeShader LoadComputeShader(string name)
+            {
                 return Resources.Load<ComputeShader>(name);
                 //return _resources.computeShaders.FindComputeShader(name);
             }
 
-            public override void UnloadComputeShader(ComputeShader shader) {
+            public override void UnloadComputeShader(ComputeShader shader)
+            {
             }
         }
 #endif

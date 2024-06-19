@@ -36,7 +36,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public bool autoTextureUpdate = true;
         public float updateFrequency = 2.0f;
         [Range(0.0f, 1.0f)]
-        public float mipmapBiasOverride = 1.0f;
+        public float mipMapBiasOverride = 1.0f;
 
         public Vector2Int displaySize;
         public Vector2Int renderSize;
@@ -59,8 +59,15 @@ namespace UnityEngine.Rendering.PostProcessing
         private RenderTexture _xessOutput;
         private RenderTexture _sharpeningOutput;
 
-        private int _idMotionVectorTexture = Shader.PropertyToID("_CameraMotionVectorsTexture");
-        private int _idDepthTexture = Shader.PropertyToID("_CameraDepthTexture");
+        private readonly int _idMotionVectorTexture = Shader.PropertyToID("_CameraMotionVectorsTexture");
+        private readonly int _idDepthTexture = Shader.PropertyToID("_CameraDepthTexture");
+        private readonly int _idSharpness = Shader.PropertyToID("Sharpness");
+
+        private ulong _previousLength;
+        private float _prevMipMapBias;
+        private float _mipMapTimer = float.MaxValue;
+
+        private Material _sharpeningMaterial;
 
         private GraphicsDevice _graphicsDevice;
         private GraphicsDevice GraphicsDevice
@@ -85,7 +92,32 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
         }
 
-        public void ConfigureCameraViewport(PostProcessRenderContext context)
+        /// <summary>
+        /// Updates a single texture to the set MipMap Bias.
+        /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
+        /// </summary>
+        public void OnMipmapSingleTexture(Texture texture)
+        {
+            MipMapUtils.OnMipMapSingleTexture(texture, renderSize.x, displaySize.x, mipMapBiasOverride);
+        }
+
+        /// <summary>
+        /// Updates all textures currently loaded to the set MipMap Bias.
+        /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
+        /// </summary>
+        public void OnMipMapAllTextures()
+        {
+            MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
+        }
+        /// <summary>
+        /// Resets all currently loaded textures to the default mipmap bias. 
+        /// </summary>
+        public void OnResetAllMipMaps()
+        {
+            MipMapUtils.OnResetAllMipMaps();
+        }
+
+        internal void ConfigureCameraViewport(PostProcessRenderContext context)
         {
             var camera = context.camera;
             _originalRect = camera.pixelRect;
@@ -124,7 +156,7 @@ namespace UnityEngine.Rendering.PostProcessing
             camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
         }
 
-        public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
+        internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
         {
             if (qualityMode == XeSSQuality.Off)
             {
@@ -132,19 +164,24 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             Camera camera = context.camera;
-            
+
             camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
             camera.projectionMatrix = XeSS_Base.GetJitteredProjectionMatrix(camera.projectionMatrix, renderSize.x, renderSize.y, antiGhosting, _scaleFactor, ref jitterX, ref jitterY, ref _frameIndex);
             camera.useJitteredProjectionMatrixForTransparentRendering = true;
         }
 
-        public void Render(PostProcessRenderContext context)
+        internal void Render(PostProcessRenderContext context)
         {
             var cmd = context.command;
             if (qualityMode == XeSSQuality.Off)
             {
                 cmd.Blit(context.source, context.destination);
                 return;
+            }
+
+            if (autoTextureUpdate)
+            {
+                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
 
             cmd.BeginSample("XeSS");
@@ -196,9 +233,13 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 if (sharpening)
                 {
-                    //cmd.Blit(_xessOutput, _sharpeningOutput, _sharpeningMaterial, 0);
-                    //cmd.Blit(_sharpeningOutput, context.destination);
-                    cmd.Blit(_xessOutput, context.destination);
+                    if (_sharpeningMaterial == null)
+                    {
+                        _sharpeningMaterial = new Material(Shader.Find("Hidden/Rcas_BIRP"));
+                    }
+
+                    _sharpeningMaterial.SetFloat(_idSharpness, Mathf.Clamp01(1 - sharpness));
+                    cmd.Blit(_xessOutput, context.destination, _sharpeningMaterial, 0);
                 }
                 else
                 {
@@ -213,17 +254,17 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.EndSample("XeSS");
         }
 
-        public void ResetCameraViewport(PostProcessRenderContext context)
+        internal void ResetCameraViewport(PostProcessRenderContext context)
         {
             context.camera.pixelRect = _originalRect;
         }
 
-        public DepthTextureMode GetCameraFlags()
+        internal DepthTextureMode GetCameraFlags()
         {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
-        public void ReleaseResources()
+        internal void ReleaseResources()
         {
             if (_xessInput != null)
             {

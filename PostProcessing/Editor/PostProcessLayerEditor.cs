@@ -202,16 +202,16 @@ namespace UnityEditor.Rendering.PostProcessing
 
             m_SGSRAutoTextureUpdate = FindProperty(x => x.sgsr.autoTextureUpdate);
             m_SGSRUpdateFrequency = FindProperty(x => x.sgsr.updateFrequency);
-            m_SGSRMipmapBiasOverride = FindProperty(x => x.sgsr.mipmapBiasOverride);
+            m_SGSRMipmapBiasOverride = FindProperty(x => x.sgsr.mipMapBiasOverride);
 #endif
 #if TND_FSR1 || AEG_FSR1
             m_FSR1QualityMode = FindProperty(x => x.fsr1.qualityMode);
             m_FSR1PerformSharpen = FindProperty(x => x.fsr1.Sharpening);
             m_FSR1Sharpness = FindProperty(x => x.fsr1.sharpness);
 
-            m_FSR1AutoTextureUpdate = FindProperty(x => x.fsr1.AutoTextureUpdate);
-            m_FSR1UpdateFrequency = FindProperty(x => x.fsr1.UpdateFrequency);
-            m_FSR1MipmapBiasOverride = FindProperty(x => x.fsr1.MipmapBiasOverride);
+            m_FSR1AutoTextureUpdate = FindProperty(x => x.fsr1.autoTextureUpdate);
+            m_FSR1UpdateFrequency = FindProperty(x => x.fsr1.updateFrequency);
+            m_FSR1MipmapBiasOverride = FindProperty(x => x.fsr1.mipMapBiasOverride);
 #endif
 #if TND_FSR3 || AEG_FSR3
             m_FSR3QualityMode = FindProperty(x => x.fsr3.qualityMode);
@@ -235,9 +235,9 @@ namespace UnityEditor.Rendering.PostProcessing
             m_FSR3AutoTcrParams = FindProperty(x => x.fsr3.generateTransparencyAndCompositionParameters);
             m_FSR3TcrMaskTexture = FindProperty(x => x.fsr3.transparencyAndCompositionMask);
 
-            m_FSR3AutoTextureUpdate = FindProperty(x => x.fsr3.AutoTextureUpdate);
-            m_FSR3UpdateFrequency = FindProperty(x => x.fsr3.UpdateFrequency);
-            m_FSR3MipmapBiasOverride = FindProperty(x => x.fsr3.MipmapBiasOverride);
+            m_FSR3AutoTextureUpdate = FindProperty(x => x.fsr3.autoTextureUpdate);
+            m_FSR3UpdateFrequency = FindProperty(x => x.fsr3.updateFrequency);
+            m_FSR3MipmapBiasOverride = FindProperty(x => x.fsr3.mipMapBiasOverride);
 
             m_FSR3AntiGhosting = FindProperty(x => x.fsr3.antiGhosting);
 
@@ -246,9 +246,9 @@ namespace UnityEditor.Rendering.PostProcessing
             m_DLSSQualityMode = FindProperty(x => x.dlss.qualityMode);
             m_DLSSAntiGhosting = FindProperty(x => x.dlss.antiGhosting);
 
-            m_DLSSAutoTextureUpdate = FindProperty(x => x.dlss.AutoTextureUpdate);
-            m_DLSSUpdateFrequency = FindProperty(x => x.dlss.UpdateFrequency);
-            m_DLSSMipmapBiasOverride = FindProperty(x => x.dlss.MipmapBiasOverride);
+            m_DLSSAutoTextureUpdate = FindProperty(x => x.dlss.autoTextureUpdate);
+            m_DLSSUpdateFrequency = FindProperty(x => x.dlss.updateFrequency);
+            m_DLSSMipmapBiasOverride = FindProperty(x => x.dlss.mipMapBiasOverride);
 #endif
 #if TND_XeSS
             m_XeSSQualityMode = FindProperty(x => x.xess.qualityMode);
@@ -258,7 +258,7 @@ namespace UnityEditor.Rendering.PostProcessing
 
             m_XeSSAutoTextureUpdate = FindProperty(x => x.xess.autoTextureUpdate);
             m_XeSSUpdateFrequency = FindProperty(x => x.xess.updateFrequency);
-            m_XeSSMipmapBiasOverride = FindProperty(x => x.xess.mipmapBiasOverride);
+            m_XeSSMipmapBiasOverride = FindProperty(x => x.xess.mipMapBiasOverride);
 
 #endif
             m_SGSRFallBack = FindProperty(x => x.sgsr.fallBackAA);

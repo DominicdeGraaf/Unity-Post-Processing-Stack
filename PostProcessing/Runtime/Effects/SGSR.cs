@@ -46,7 +46,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public bool autoTextureUpdate = true;
         public float updateFrequency = 2.0f;
         [Range(0.0f, 1.0f)]
-        public float mipmapBiasOverride = 1.0f;
+        public float mipMapBiasOverride = 1.0f;
 
         private Rect _originalRect;
 
@@ -54,7 +54,6 @@ namespace UnityEngine.Rendering.PostProcessing
         internal Vector2Int renderSize, displaySize;
 
         private ulong _previousLength;
-        private float _mipMapBias;
         private float _prevMipMapBias;
         private float _mipMapTimer = float.MaxValue;
 
@@ -67,7 +66,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
         public void OnMipmapSingleTexture(Texture texture) {
-            texture.mipMapBias = _mipMapBias;
+            MipMapUtils.OnMipMapSingleTexture(texture, renderSize.x, displaySize.x, mipMapBiasOverride);
         }
 
         /// <summary>
@@ -75,16 +74,16 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
         public void OnMipMapAllTextures() {
-            SGSR_UTILS.OnMipMapAllTextures(_mipMapBias);
+            MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
         public void OnResetAllMipMaps() {
-            SGSR_UTILS.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps();
         }
 
-        public void ConfigureCameraViewport(PostProcessRenderContext context) {
+        internal void ConfigureCameraViewport(PostProcessRenderContext context) {
             Camera camera = context.camera;
             _originalRect = camera.pixelRect;
 
@@ -96,11 +95,11 @@ namespace UnityEngine.Rendering.PostProcessing
             camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
         }
 
-        public void ResetCameraViewport(PostProcessRenderContext context) {
+        internal void ResetCameraViewport(PostProcessRenderContext context) {
             context.camera.pixelRect = _originalRect;
         }
 
-        public void Render(PostProcessRenderContext context) {
+        internal void Render(PostProcessRenderContext context) {
           
 
             var cmd = context.command;
@@ -109,7 +108,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 return;
             }
             if(autoTextureUpdate) {
-                UpdateMipMaps(renderSize.x, displaySize.y);
+                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
             cmd.BeginSample("SGSR");
 
@@ -145,25 +144,6 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             return 2.0f;
-        }
-
-        /// <summary>
-        /// Automatically updates the mipmap of all loaded textures
-        /// </summary>
-        protected void UpdateMipMaps(float _renderWidth, float _displayWidth) {
-            _mipMapTimer += Time.deltaTime;
-
-            if(_mipMapTimer > updateFrequency) {
-                _mipMapTimer = 0;
-
-                _mipMapBias = (Mathf.Log(_renderWidth / _displayWidth, 2f) - 1) * mipmapBiasOverride;
-                if(_previousLength != Texture.currentTextureMemory || _prevMipMapBias != _mipMapBias) {
-                    _prevMipMapBias = _mipMapBias;
-                    _previousLength = Texture.currentTextureMemory;
-
-                    OnMipMapAllTextures();
-                }
-            }
         }
 
         static Material _blitMaterial = null;
