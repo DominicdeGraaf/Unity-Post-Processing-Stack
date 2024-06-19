@@ -83,7 +83,8 @@ namespace UnityEngine.Rendering.PostProcessing
             MipMapUtils.OnResetAllMipMaps();
         }
 
-        internal void ConfigureCameraViewport(PostProcessRenderContext context) {
+        public void ConfigureCameraViewport(PostProcessRenderContext context)
+        {
             Camera camera = context.camera;
             _originalRect = camera.pixelRect;
 
@@ -92,11 +93,34 @@ namespace UnityEngine.Rendering.PostProcessing
             displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
             renderSize = new Vector2Int((int)(displaySize.x / _scaleFactor), (int)(displaySize.y / _scaleFactor));
 
-            camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+            if (context.camera.stereoEnabled)
+            {
+#if UNITY_STANDALONE
+                camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+#else
+                ScalableBufferManager.ResizeBuffers(1 / _scaleFactor, 1 / _scaleFactor);
+#endif
+            }
+            else
+            {
+                camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+            }
         }
 
-        internal void ResetCameraViewport(PostProcessRenderContext context) {
-            context.camera.pixelRect = _originalRect;
+        public void ResetCameraViewport(PostProcessRenderContext context)
+        {
+            if (context.camera.stereoEnabled)
+            {
+#if UNITY_STANDALONE
+                context.camera.pixelRect = _originalRect;
+#else
+                ScalableBufferManager.ResizeBuffers(1, 1);
+#endif
+            }
+            else
+            {
+                context.camera.pixelRect = _originalRect;
+            }
         }
 
         internal void Render(PostProcessRenderContext context) {

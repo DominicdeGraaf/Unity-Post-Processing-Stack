@@ -152,7 +152,8 @@ namespace UnityEngine.Rendering.PostProcessing
             RCASParametersCB.name = "RCAS Parameters";
         }
 
-        internal void ConfigureCameraViewport(PostProcessRenderContext context) {
+        internal void ConfigureCameraViewport(PostProcessRenderContext context)
+        {
             var camera = context.camera;
             _originalRect = camera.rect;
 
@@ -161,13 +162,34 @@ namespace UnityEngine.Rendering.PostProcessing
             renderSize = new Vector2Int((int)(displaySize.x / scaleFactor), (int)(displaySize.y / scaleFactor));
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
-            //camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
-            camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
-
+            if (context.camera.stereoEnabled)
+            {
+#if UNITY_STANDALONE
+                camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+#else
+                ScalableBufferManager.ResizeBuffers(1 / scaleFactor, 1 / scaleFactor);
+#endif
+            }
+            else
+            {
+                camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
+            }
         }
 
-        internal void ResetCameraViewport(PostProcessRenderContext context) {
-            context.camera.rect = _originalRect;
+        public void ResetCameraViewport(PostProcessRenderContext context)
+        {
+            if (context.camera.stereoEnabled)
+            {
+#if UNITY_STANDALONE
+                context.camera.pixelRect = _originalRect;
+#else
+                ScalableBufferManager.ResizeBuffers(1, 1);
+#endif
+            }
+            else
+            {
+                context.camera.rect = _originalRect;
+            }
         }
 
         internal void Render(PostProcessRenderContext context) {
