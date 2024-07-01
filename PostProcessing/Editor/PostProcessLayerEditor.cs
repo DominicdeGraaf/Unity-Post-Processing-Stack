@@ -80,6 +80,8 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_DLSSQualityMode;
         SerializedProperty m_DLSSFallBack;
         SerializedProperty m_DLSSAntiGhosting;
+        SerializedProperty m_DLSSPerformSharpen;
+        SerializedProperty m_DLSSSharpness;
 
         SerializedProperty m_DLSSAutoTextureUpdate;
         SerializedProperty m_DLSSUpdateFrequency;
@@ -245,6 +247,8 @@ namespace UnityEditor.Rendering.PostProcessing
 #if TND_DLSS || AEG_DLSS
             m_DLSSQualityMode = FindProperty(x => x.dlss.qualityMode);
             m_DLSSAntiGhosting = FindProperty(x => x.dlss.antiGhosting);
+            m_DLSSPerformSharpen = FindProperty(x => x.dlss.Sharpening);
+            m_DLSSSharpness = FindProperty(x => x.dlss.sharpness);
 
             m_DLSSAutoTextureUpdate = FindProperty(x => x.dlss.autoTextureUpdate);
             m_DLSSUpdateFrequency = FindProperty(x => x.dlss.updateFrequency);
@@ -506,6 +510,13 @@ namespace UnityEditor.Rendering.PostProcessing
 
                     EditorGUILayout.PropertyField(m_DLSSQualityMode);
                     EditorGUILayout.PropertyField(m_DLSSAntiGhosting);
+
+                    EditorGUILayout.PropertyField(m_DLSSPerformSharpen);
+                    if (m_DLSSPerformSharpen.boolValue) {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_DLSSSharpness);
+                        EditorGUI.indentLevel--;
+                    }
 
                     EditorGUILayout.PropertyField(m_DLSSAutoTextureUpdate);
                     if(m_DLSSAutoTextureUpdate.boolValue) {

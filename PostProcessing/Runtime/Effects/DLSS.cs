@@ -52,6 +52,13 @@ namespace UnityEngine.Rendering.PostProcessing
 
         [Header("DLSS Settings")]
         public DLSS_Quality qualityMode = DLSS_Quality.MaximumQuality;
+
+        [Tooltip("Apply sharpening to the image during upscaling.")]
+        public bool Sharpening = true;
+        [Tooltip("Strength of the sharpening effect.")]
+        [Range(0, 1)] public float sharpness = 0.5f;
+
+
         [Range(0, 1)] public float antiGhosting = 0.1f;
 
         [Header("MipMap Settings")]
@@ -193,9 +200,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 state = new ViewState(device);
             }
 
+            dlssData.sharpening = Sharpening;
+            dlssData.sharpness = sharpness;
+
             // Monitor for any resolution changes and recreate the DLSS context if necessary
             // We can't create an DLSS context without info from the post-processing context, so delay the initial setup until here
-            if(displaySize.x != _prevDisplaySize.x || displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode) {
+            if (displaySize.x != _prevDisplaySize.x || displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode) {
                 _mipMapTimer = Mathf.Infinity;
 
                 if(m_dlssOutput != null) {
@@ -206,8 +216,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 //var scaledRenderSize = GetScaledRenderSize(camera);
 
                 float _upscaleRatio = GetUpscaleRatioFromQualityMode(qualityMode);
-                m_renderWidth = Mathf.RoundToInt(displaySize.x / _upscaleRatio);
-                m_renderHeight = Mathf.RoundToInt(displaySize.y / _upscaleRatio);
+                m_renderWidth = (int)(displaySize.x / _upscaleRatio);
+                m_renderHeight = (int)(displaySize.y / _upscaleRatio);
 
 #if(TND_DLSS)
                 dlssData.inputRes = new TND.DLSS.DLSS_UTILS.Resolution() { width = m_renderWidth, height = m_renderHeight };

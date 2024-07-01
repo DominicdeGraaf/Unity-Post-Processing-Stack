@@ -132,6 +132,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// FSR3 upscaling & anti-aliasing settings for this camera.
         /// </summary>
         public FSR3 fsr3;
+        //TND FOR VR!
+        public FSR3 fsr3Stereo;
 
         /// <summary>
         /// DLSS upscaling & anti-aliasing settings for this camera.
@@ -370,6 +372,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     fsr3.ResetCameraViewport(m_CurrentContext);
+                    if (m_CurrentContext.stereoActive)
+                    {
+                        fsr3Stereo.ResetCameraViewport(m_CurrentContext);
+                    }
                 }
 
 #endif
@@ -430,6 +436,8 @@ namespace UnityEngine.Rendering.PostProcessing
             RuntimeUtilities.CreateIfNull(ref sgsr);
             RuntimeUtilities.CreateIfNull(ref fsr1);
             RuntimeUtilities.CreateIfNull(ref fsr3);
+            if (fsr3Stereo != null)
+                RuntimeUtilities.CreateIfNull(ref fsr3Stereo);
             RuntimeUtilities.CreateIfNull(ref dlss);
             RuntimeUtilities.CreateIfNull(ref xess);
             RuntimeUtilities.CreateIfNull(ref subpixelMorphologicalAntialiasing);
@@ -544,7 +552,13 @@ namespace UnityEngine.Rendering.PostProcessing
             if (m_CurrentContext.IsFSR3Active())
             {
                 fsr3.Release();
+
+                if (fsr3Stereo != null)
+                {
+                    fsr3Stereo.Release();
+                }
             }
+
 #endif
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
             if (m_CurrentContext.IsDLSSActive())
@@ -588,7 +602,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             //TND is this still needed?
             // Temporarily take control of the camera's target texture, so that the upscaled output doesn't get clipped
-            if (m_Camera.targetTexture != null && (m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive()))
+            if (m_Camera.targetTexture != null && (m_CurrentContext.IsSGSRActive() || m_CurrentContext.IsFSR1Active() || m_CurrentContext.IsFSR3Active() || m_CurrentContext.IsDLSSActive() || m_CurrentContext.IsXeSSActive()))
             {
 
                 m_originalTargetTexture = m_Camera.targetTexture;
@@ -727,6 +741,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
+        private bool _runRightEyeOnceCommandBuffers;
         void BuildCommandBuffers()
         {
             var context = m_CurrentContext;
@@ -788,11 +803,14 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     antialiasingMode = fsr3.fallBackAA;
                 }
-                //if(!context.stereoActive || (context.stereoActive && context.camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right))
-                //{
+
                 fsr3.ConfigureCameraViewport(context);
+                if (context.stereoActive)
+                {
+                    fsr3Stereo.ConfigureCameraViewportRightEye(context);
+                }
                 context.SetRenderSize(fsr3.renderSize);
-                //}
+
 #else
                 antialiasingMode = fsr3.fallBackAA;
 #endif
@@ -839,6 +857,10 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 #if TND_FSR3 || AEG_FSR3
                     fsr3.Release();
+                    if (fsr3Stereo != null)
+                    {
+                        fsr3Stereo.Release();
+                    }
 #endif
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
                     dlss.Release();
@@ -875,7 +897,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
 #if UNITY_2019_1_OR_NEWER
             if (context.stereoActive)
-                context.UpdateSinglePassStereoState(context.IsTemporalAntialiasingActive() || context.IsSGSRActive() || context.IsFSR3Active() || context.IsFSR3Active() || context.IsDLSSActive() || context.IsXeSSActive(), aoSupported, isScreenSpaceReflectionsActive);
+                context.UpdateSinglePassStereoState(context.IsTemporalAntialiasingActive() || context.IsSGSRActive() || context.IsFSR1Active() || context.IsFSR3Active() || context.IsDLSSActive() || context.IsXeSSActive(), aoSupported, isScreenSpaceReflectionsActive);
 #endif
             // Ambient-only AO is a special case and has to be done in separate command buffers
             if (isAmbientOcclusionDeferred)
@@ -945,12 +967,23 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
 #if TND_FSR3 || AEG_FSR3
+            //TND Only run the right eye once, otherwise we'll get a free memory leak
+            if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+            {
+                _runRightEyeOnceCommandBuffers = !_runRightEyeOnceCommandBuffers;
+                if (_runRightEyeOnceCommandBuffers)
+                {
+                    goto skip;
+                }
+            }
             // Create a copy of the opaque-only color buffer for auto-reactive mask generation
             if (context.IsFSR3Active() && (fsr3.autoGenerateReactiveMask || fsr3.autoGenerateTransparencyAndComposition))
             {
                 m_opaqueOnly = context.GetScreenSpaceTemporaryRT(colorFormat: sourceFormat);
                 m_LegacyCmdBufferOpaque.BuiltinBlit(cameraTarget, m_opaqueOnly);
             }
+        skip:
+
 #endif
 
             // Post-transparency stack
@@ -1085,6 +1118,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if (finalBlitToCameraTarget && m_CurrentContext.IsFSR3Active())
             {
                 fsr3.ResetCameraViewport(m_CurrentContext);
+                if (m_CurrentContext.stereoActive)
+                {
+                    fsr3Stereo.ResetCameraViewport(m_CurrentContext);
+                }
             }
 #endif
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
@@ -1256,6 +1293,10 @@ namespace UnityEngine.Rendering.PostProcessing
             temporalAntialiasing.ResetHistory();
 #if TND_FSR3 || AEG_FSR3
             fsr3.OnResetCamera();
+            if (fsr3Stereo != null)
+            {
+                fsr3Stereo.OnResetCamera();
+            }
 #endif
         }
 
@@ -1565,27 +1606,59 @@ namespace UnityEngine.Rendering.PostProcessing
                 else if (context.IsFSR3Active())
                 {
 #if TND_FSR3 || AEG_FSR3
-                    fsr3.ConfigureJitteredProjectionMatrix(context);
+                    if (!context.stereoActive || context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
+                    {
+                        fsr3.ConfigureJitteredProjectionMatrix(context);
 
-                    // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
-                    context.SetRenderSize(fsr3.displaySize);
+                        // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
+                        context.SetRenderSize(fsr3.displaySize);
 
-                    var fsrTarget = m_TargetPool.Get();
-                    var finalDestination = context.destination;
-                    context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, isUpscaleOutput: true);
-                    context.destination = fsrTarget;
-                    fsr3.colorOpaqueOnly = m_opaqueOnly;
-                    fsr3.Render(context);
-                    context.source = fsrTarget;
-                    context.destination = finalDestination;
+                        var fsrTarget = m_TargetPool.Get();
+                        var finalDestination = context.destination;
+                        if (context.camera.stereoEnabled)
+                        {
+                            context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: true);
+                        }
+                        else
+                        {
+                            context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, isUpscaleOutput: true);
+                        }
+                        context.destination = fsrTarget;
+                        fsr3.colorOpaqueOnly = m_opaqueOnly;
+                        fsr3.Render(context);
+                        context.source = fsrTarget;
+                        context.destination = finalDestination;
 
-                    // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
-                    RuntimeUtilities.AllowDynamicResolution = false;
+                        // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
+                        RuntimeUtilities.AllowDynamicResolution = false;
 
-                    if (lastTarget > -1)
-                        cmd.ReleaseTemporaryRT(lastTarget);
+                        if (lastTarget > -1)
+                            cmd.ReleaseTemporaryRT(lastTarget);
 
-                    lastTarget = fsrTarget;
+                        lastTarget = fsrTarget;
+                    }
+                    else if (context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+                    {
+                        //Set the upscaler's output to full display resolution, as well as for all following post-processing effects
+                        context.SetRenderSize(fsr3Stereo.displaySize);
+
+                        var fsrTarget = m_TargetPool.Get();
+                        var finalDestination = context.destination;
+                        context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: true);
+                        context.destination = fsrTarget;
+                        fsr3Stereo.colorOpaqueOnly = m_opaqueOnly;
+                        fsr3Stereo.Render(context, true);
+                        context.source = fsrTarget;
+                        context.destination = finalDestination;
+
+                        // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
+                        RuntimeUtilities.AllowDynamicResolution = false;
+
+                        if (lastTarget > -1)
+                            cmd.ReleaseTemporaryRT(lastTarget);
+
+                        lastTarget = fsrTarget;
+                    }
 #endif
                 }
                 else if (context.IsDLSSActive())

@@ -73,8 +73,6 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(0, 1)]
         public float mipMapBiasOverride = 1f;
 
-
-
         [HideInInspector, Tooltip("Optional texture to control the influence of the current frame on the reconstructed output. If unset, either an auto-generated or a default cleared reactive mask will be used.")]
         public Texture reactiveMask = null;
         [HideInInspector, Tooltip("Optional texture for marking areas of specialist rendering which should be accounted for during the upscaling process. If unset, a default cleared mask will be used.")]
@@ -144,6 +142,8 @@ namespace UnityEngine.Rendering.PostProcessing
         protected float _prevMipMapBias;
         protected float _mipMapTimer = float.MaxValue;
 
+        private bool isStereoRendering = false;
+
         /// <summary>
         /// Resets the camera for the next frame, clearing all the buffers saved from previous frames in order to prevent artifacts.
         /// Should be called in or before PreRender oh the frame where the camera makes a jumpcut.
@@ -208,11 +208,13 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.camera.stereoEnabled)
             {
                 if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
-                { return; }
+                {
+                    return;
+                }
             }
 
             var camera = context.camera;
-            _originalRect = camera.rect;
+            _originalRect = camera.pixelRect;
 
             // Determine the desired rendering and display resolutions
             _displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
@@ -221,17 +223,41 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
             camera.aspect = (_displaySize.x * _originalRect.width) / (_displaySize.y * _originalRect.height);
-            camera.rect = new Rect(0, 0, _originalRect.width * _maxRenderSize.x / _displaySize.x, _originalRect.height * _maxRenderSize.y / _displaySize.y);
+            camera.pixelRect = new Rect(0, 0, _originalRect.width * _maxRenderSize.x / _displaySize.x, _originalRect.height * _maxRenderSize.y / _displaySize.y);
+        }
+
+        public void ConfigureCameraViewportRightEye(PostProcessRenderContext context)
+        {
+            if (context.camera.stereoEnabled)
+            {
+                if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
+                {
+                    return;
+                }
+            }
+
+            // Determine the desired rendering and display resolutions
+            var camera = context.camera;
+
+            _originalRect = context.superResolution3._originalRect;
+            _displaySize = new Vector2Int(context.superResolution3._displaySize.x, context.superResolution3._displaySize.y);
+
+            qualityMode = context.superResolution3.qualityMode;
+            Fsr3.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, qualityMode);
+            _maxRenderSize = new Vector2Int(maxRenderWidth, maxRenderHeight);
+
+            // Render to a smaller portion of the screen by manipulating the camera's viewport rect
+            camera.aspect = (_displaySize.x * _originalRect.width) / (_displaySize.y * _originalRect.height);
+            camera.pixelRect = new Rect(0, 0, _originalRect.width * _maxRenderSize.x / _displaySize.x, _originalRect.height * _maxRenderSize.y / _displaySize.y);
         }
 
         internal void ResetCameraViewport(PostProcessRenderContext context)
         {
-            context.camera.rect = _originalRect;
+            context.camera.pixelRect = _originalRect;
         }
 
-        internal void Render(PostProcessRenderContext context)
+        internal void Render(PostProcessRenderContext context, bool _stereoRendering = false)
         {
-
             var cmd = context.command;
             if (qualityMode == Fsr3.QualityMode.Off)
             {
@@ -239,8 +265,20 @@ namespace UnityEngine.Rendering.PostProcessing
                 return;
             }
 
+            if (autoTextureUpdate)
+            {
+                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
+            }
 
-            cmd.BeginSample("FSR3");
+            if (_stereoRendering)
+            {
+                isStereoRendering = _stereoRendering;
+                cmd.BeginSample("FSR3 Right Eye");
+            }
+            else
+            {
+                cmd.BeginSample("FSR3");
+            }
 
             // Monitor for any resolution changes and recreate the FSR3 context if necessary
             // We can't create an FSR3 context without info from the post-processing context, so delay the initial setup until here
@@ -249,11 +287,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 DestroyFsrContext();
                 CreateFsrContext(context);
                 _mipMapTimer = Mathf.Infinity;
-            }
-
-            if (autoTextureUpdate)
-            {
-                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
 
             cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputColor, context.source);
@@ -274,7 +307,14 @@ namespace UnityEngine.Rendering.PostProcessing
 
             _fsrContext.Dispatch(_dispatchDescription, cmd);
 
-            cmd.EndSample("FSR3");
+            if (_stereoRendering)
+            {
+                cmd.EndSample("FSR3 Right Eye");
+            }
+            else
+            {
+                cmd.EndSample("FSR3");
+            }
 
             _resetHistory = false;
         }
@@ -297,6 +337,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 flags |= Fsr3.InitializationFlags.EnableAutoExposure;
             if (RuntimeUtilities.IsDynamicResolutionEnabled(context.camera))
                 flags |= Fsr3.InitializationFlags.EnableDynamicResolution;
+            if (context.camera.stereoEnabled)
+                flags |= Fsr3.InitializationFlags.EnableDisplayResolutionMotionVectors;
 
             _callbacks = callbacksFactory(context);
             _fsrContext = Fsr3.CreateContext(_displaySize, _maxRenderSize, _callbacks, flags);
@@ -328,12 +370,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             jitterX += UnityEngine.Random.Range(-0.001f * antiGhosting, 0.001f * antiGhosting);
             jitterY += UnityEngine.Random.Range(-0.001f * antiGhosting, 0.001f * antiGhosting);
-
-
-            //var jitterTranslationMatrix = Matrix4x4.Translate(new Vector3(jitterX, jitterY, 0));
-            //camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
-            //camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
-            //camera.useJitteredProjectionMatrixForTransparentRendering = true;
+            jitter = new Vector2(jitterX, jitterY);
 
             if (camera.stereoEnabled)
             {
@@ -346,7 +383,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 ConfigureJitteredProjectionMatrix(camera, jitterX, jitterY);
             }
 
-            jitter = new Vector2(jitterX, jitterY);
         }
 
         /// <summary>
@@ -356,9 +392,10 @@ namespace UnityEngine.Rendering.PostProcessing
         public void ConfigureJitteredProjectionMatrix(Camera camera, float jitterX, float jitterY)
         {
             var jitterTranslationMatrix = Matrix4x4.Translate(new Vector3(jitterX, jitterY, 0));
-            camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
+            var m_projectionMatrix = camera.projectionMatrix;
+            camera.nonJitteredProjectionMatrix = m_projectionMatrix;
             camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
-            camera.useJitteredProjectionMatrixForTransparentRendering = true;
+            camera.useJitteredProjectionMatrixForTransparentRendering = false;
         }
 
         /// <summary>
@@ -368,13 +405,11 @@ namespace UnityEngine.Rendering.PostProcessing
         // TODO: We'll probably need to isolate most of this for SRPs
         public void ConfigureStereoJitteredProjectionMatrices(PostProcessRenderContext context, Camera camera)
         {
-#if UNITY_2017_3_OR_NEWER
             for (var eye = Camera.StereoscopicEye.Left; eye <= Camera.StereoscopicEye.Right; eye++)
             {
                 // This saves off the device generated projection matrices as non-jittered
                 camera.CopyStereoDeviceProjectionMatrixToNonJittered(eye);
                 var originalProj = camera.GetStereoNonJitteredProjectionMatrix(eye);
-
                 // Currently no support for custom jitter func, as VR devices would need to provide
                 // original projection matrix as input along with jitter
                 var jitteredMatrix = RuntimeUtilities.GenerateJitteredProjectionMatrixFromOriginal(context, originalProj, jitter);
@@ -384,8 +419,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // jitter has to be scaled for the actual eye texture size, not just the intermediate texture size
             // which could be double-wide in certain stereo rendering scenarios
             jitter = new Vector2(jitter.x / context.screenWidth, jitter.y / context.screenHeight);
-            camera.useJitteredProjectionMatrixForTransparentRendering = true;
-#endif
+            camera.useJitteredProjectionMatrixForTransparentRendering = false;
         }
 
         private void SetupDispatchDescription(PostProcessRenderContext context)
@@ -401,47 +435,101 @@ namespace UnityEngine.Rendering.PostProcessing
             _dispatchDescription.Reactive = null;
             _dispatchDescription.TransparencyAndComposition = null;
 
-            if (exposureSource == ExposureSource.Manual && exposure != null)
-                _dispatchDescription.Exposure = exposure;
-            if (exposureSource == ExposureSource.Unity)
-                _dispatchDescription.Exposure = context.autoExposureTexture;
-            if (reactiveMask != null)
-                _dispatchDescription.Reactive = reactiveMask;
-            if (transparencyAndCompositionMask != null)
-                _dispatchDescription.TransparencyAndComposition = transparencyAndCompositionMask;
-
             var scaledRenderSize = GetScaledRenderSize(context.camera);
 
-            _dispatchDescription.Output = context.destination;
-            _dispatchDescription.PreExposure = preExposure;
-            _dispatchDescription.EnableSharpening = Sharpening;
-            _dispatchDescription.Sharpness = sharpness;
-            _dispatchDescription.MotionVectorScale.x = -scaledRenderSize.x;
-            _dispatchDescription.MotionVectorScale.y = -scaledRenderSize.y;
-            _dispatchDescription.RenderSize = scaledRenderSize;
-            _dispatchDescription.InputResourceSize = scaledRenderSize;
-            _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
-            _dispatchDescription.CameraNear = camera.nearClipPlane;
-            _dispatchDescription.CameraFar = camera.farClipPlane;
-            _dispatchDescription.CameraFovAngleVertical = camera.fieldOfView * Mathf.Deg2Rad;
-            _dispatchDescription.ViewSpaceToMetersFactor = 1.0f; // 1 unit is 1 meter in Unity
-            _dispatchDescription.Reset = _resetHistory;
-
-            // Set up the parameters for the optional experimental auto-TCR feature
-            _dispatchDescription.EnableAutoReactive = autoGenerateTransparencyAndComposition;
-            if (autoGenerateTransparencyAndComposition)
+            if (camera.stereoEnabled)
             {
-                _dispatchDescription.ColorOpaqueOnly = colorOpaqueOnly;
-                _dispatchDescription.AutoTcThreshold = generateTransparencyAndCompositionParameters.autoTcThreshold;
-                _dispatchDescription.AutoTcScale = generateTransparencyAndCompositionParameters.autoTcScale;
-                _dispatchDescription.AutoReactiveScale = generateTransparencyAndCompositionParameters.autoReactiveScale;
-                _dispatchDescription.AutoReactiveMax = generateTransparencyAndCompositionParameters.autoReactiveMax;
+                _dispatchDescription.MotionVectorScale.x = -displaySize.x;
+                _dispatchDescription.MotionVectorScale.y = -displaySize.y;
+            }
+            else
+            {
+                _dispatchDescription.MotionVectorScale.x = -scaledRenderSize.x;
+                _dispatchDescription.MotionVectorScale.y = -scaledRenderSize.y;
             }
 
             if (SystemInfo.usesReversedZBuffer)
             {
                 // Swap the near and far clip plane distances as FSR3 expects this when using inverted depth
                 (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
+            }
+
+            if (!isStereoRendering)
+            {
+                if (exposureSource == ExposureSource.Manual && exposure != null)
+                    _dispatchDescription.Exposure = exposure;
+                if (exposureSource == ExposureSource.Unity)
+                    _dispatchDescription.Exposure = context.autoExposureTexture;
+                if (reactiveMask != null)
+                    _dispatchDescription.Reactive = reactiveMask;
+                if (transparencyAndCompositionMask != null)
+                    _dispatchDescription.TransparencyAndComposition = transparencyAndCompositionMask;
+
+
+                _dispatchDescription.Output = context.destination;
+                _dispatchDescription.PreExposure = preExposure;
+                _dispatchDescription.EnableSharpening = Sharpening;
+
+                _dispatchDescription.Sharpness = sharpness;
+
+                _dispatchDescription.RenderSize = scaledRenderSize;
+                _dispatchDescription.InputResourceSize = scaledRenderSize;
+                _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
+                _dispatchDescription.CameraNear = camera.nearClipPlane;
+                _dispatchDescription.CameraFar = camera.farClipPlane;
+                _dispatchDescription.CameraFovAngleVertical = camera.fieldOfView * Mathf.Deg2Rad;
+                _dispatchDescription.ViewSpaceToMetersFactor = 1.0f; // 1 unit is 1 meter in Unity
+                _dispatchDescription.Reset = _resetHistory;
+
+                // Set up the parameters for the optional experimental auto-TCR feature
+                _dispatchDescription.EnableAutoReactive = autoGenerateTransparencyAndComposition;
+                if (autoGenerateTransparencyAndComposition)
+                {
+                    _dispatchDescription.ColorOpaqueOnly = colorOpaqueOnly;
+                    _dispatchDescription.AutoTcThreshold = generateTransparencyAndCompositionParameters.autoTcThreshold;
+                    _dispatchDescription.AutoTcScale = generateTransparencyAndCompositionParameters.autoTcScale;
+                    _dispatchDescription.AutoReactiveScale = generateTransparencyAndCompositionParameters.autoReactiveScale;
+                    _dispatchDescription.AutoReactiveMax = generateTransparencyAndCompositionParameters.autoReactiveMax;
+                }
+            }
+            else
+            {
+                if (exposureSource == ExposureSource.Manual && context.superResolution3.exposure != null)
+                    _dispatchDescription.Exposure = context.superResolution3.exposure;
+                if (exposureSource == ExposureSource.Unity)
+                    _dispatchDescription.Exposure = context.autoExposureTexture;
+                if (reactiveMask != null)
+                    _dispatchDescription.Reactive = context.superResolution3.reactiveMask;
+                if (transparencyAndCompositionMask != null)
+                    _dispatchDescription.TransparencyAndComposition = context.superResolution3.transparencyAndCompositionMask;
+
+                _dispatchDescription.Output = context.destination;
+                _dispatchDescription.PreExposure = context.superResolution3.preExposure;
+                _dispatchDescription.EnableSharpening = context.superResolution3.Sharpening;
+
+                _dispatchDescription.Sharpness = context.superResolution3.sharpness;
+
+                _dispatchDescription.RenderSize = scaledRenderSize;
+                _dispatchDescription.InputResourceSize = scaledRenderSize;
+                _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
+                _dispatchDescription.CameraNear = camera.nearClipPlane;
+                _dispatchDescription.CameraFar = camera.farClipPlane;
+                _dispatchDescription.CameraFovAngleVertical = camera.fieldOfView * Mathf.Deg2Rad;
+                _dispatchDescription.ViewSpaceToMetersFactor = 1.0f; // 1 unit is 1 meter in Unity
+                _dispatchDescription.Reset = context.superResolution3._resetHistory;
+
+                autoGenerateReactiveMask = context.superResolution3.autoGenerateReactiveMask;
+
+                // Set up the parameters for the optional experimental auto-TCR feature
+                _dispatchDescription.EnableAutoReactive = context.superResolution3.autoGenerateTransparencyAndComposition;
+                if (context.superResolution3.autoGenerateTransparencyAndComposition)
+                {
+                    _dispatchDescription.ColorOpaqueOnly = colorOpaqueOnly;
+                    _dispatchDescription.AutoTcThreshold = context.superResolution3.generateTransparencyAndCompositionParameters.autoTcThreshold;
+                    _dispatchDescription.AutoTcScale = context.superResolution3.generateTransparencyAndCompositionParameters.autoTcScale;
+                    _dispatchDescription.AutoReactiveScale = context.superResolution3.generateTransparencyAndCompositionParameters.autoReactiveScale;
+                    _dispatchDescription.AutoReactiveMax = context.superResolution3.generateTransparencyAndCompositionParameters.autoReactiveMax;
+                }
             }
         }
 
@@ -452,10 +540,21 @@ namespace UnityEngine.Rendering.PostProcessing
             _genReactiveDescription.ColorPreUpscale = null;
             _genReactiveDescription.OutReactive = null;
             _genReactiveDescription.RenderSize = GetScaledRenderSize(context.camera);
-            _genReactiveDescription.Scale = ReactiveScale;
-            _genReactiveDescription.CutoffThreshold = ReactiveThreshold;
-            _genReactiveDescription.BinaryValue = ReactiveBinaryValue;
-            _genReactiveDescription.Flags = flags;
+
+            if (!isStereoRendering)
+            {
+                _genReactiveDescription.Scale = ReactiveScale;
+                _genReactiveDescription.CutoffThreshold = ReactiveThreshold;
+                _genReactiveDescription.BinaryValue = ReactiveBinaryValue;
+                _genReactiveDescription.Flags = flags;
+            }
+            else
+            {
+                _genReactiveDescription.Scale = context.superResolution3.ReactiveScale;
+                _genReactiveDescription.CutoffThreshold = context.superResolution3.ReactiveThreshold;
+                _genReactiveDescription.BinaryValue = context.superResolution3.ReactiveBinaryValue;
+                _genReactiveDescription.Flags = context.superResolution3.flags;
+            }
         }
 
         private Vector2Int GetScaledRenderSize(Camera camera)
@@ -478,7 +577,6 @@ namespace UnityEngine.Rendering.PostProcessing
             public override ComputeShader LoadComputeShader(string name)
             {
                 return Resources.Load<ComputeShader>(name);
-                //return _resources.computeShaders.FindComputeShader(name);
             }
 
             public override void UnloadComputeShader(ComputeShader shader)
