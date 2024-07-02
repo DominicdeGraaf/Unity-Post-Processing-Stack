@@ -454,6 +454,14 @@ namespace UnityEngine.Rendering.PostProcessing
                 (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
             }
 
+#if UNITY_EDITOR
+            //TND sharpening shader breaks the output in editor, but it works fine in a build!
+            if (context.camera.stereoEnabled)
+            {
+                Sharpening = false;
+            }
+#endif
+
             if (!isStereoRendering)
             {
                 if (exposureSource == ExposureSource.Manual && exposure != null)
@@ -465,11 +473,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 if (transparencyAndCompositionMask != null)
                     _dispatchDescription.TransparencyAndComposition = transparencyAndCompositionMask;
 
-
                 _dispatchDescription.Output = context.destination;
                 _dispatchDescription.PreExposure = preExposure;
-                _dispatchDescription.EnableSharpening = Sharpening;
 
+                _dispatchDescription.EnableSharpening = Sharpening;
                 _dispatchDescription.Sharpness = sharpness;
 
                 _dispatchDescription.RenderSize = scaledRenderSize;
@@ -557,7 +564,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        private Vector2Int GetScaledRenderSize(Camera camera)
+        internal Vector2Int GetScaledRenderSize(Camera camera)
         {
             if (!RuntimeUtilities.IsDynamicResolutionEnabled(camera))
                 return _maxRenderSize;
