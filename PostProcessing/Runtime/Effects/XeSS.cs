@@ -266,6 +266,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void ReleaseResources()
         {
+            GraphicsDevice.ReleaseResources();
+
             if (_xessInput != null)
             {
                 _xessInput.Release();

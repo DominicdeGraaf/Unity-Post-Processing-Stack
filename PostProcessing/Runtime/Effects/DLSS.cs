@@ -98,6 +98,7 @@ namespace UnityEngine.Rendering.PostProcessing
         protected float _prevMipMapBias;
         protected float _mipMapTimer = float.MaxValue;
 
+        private bool isStereoRendering = false;
         /// <summary>
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
@@ -144,8 +145,16 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         internal void ConfigureCameraViewport(PostProcessRenderContext context) {
+            if (context.camera.stereoEnabled)
+            {
+                if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+                {
+                    return;
+                }
+            }
+
             var camera = context.camera;
-            _originalRect = camera.rect;
+            _originalRect = camera.pixelRect;
 
             // Determine the desired rendering and display resolutions
             displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
@@ -154,11 +163,36 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
             camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
-            camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
+            camera.pixelRect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
+        }
+
+        public void ConfigureCameraViewportRightEye(PostProcessRenderContext context)
+        {
+            if (context.camera.stereoEnabled)
+            {
+                if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
+                {
+                    return;
+                }
+            }
+
+            // Determine the desired rendering and display resolutions
+            var camera = context.camera;
+
+            _originalRect = context.deepLearningSuperSampling._originalRect;
+            displaySize = new Vector2Int(context.deepLearningSuperSampling.displaySize.x, context.deepLearningSuperSampling.displaySize.y);
+
+            qualityMode = context.deepLearningSuperSampling.qualityMode;
+            GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, displaySize.x, displaySize.y, qualityMode);
+            renderSize = new Vector2Int(maxRenderWidth, maxRenderHeight);
+
+            // Render to a smaller portion of the screen by manipulating the camera's viewport rect
+            camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
+            camera.pixelRect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
         }
 
         internal void ResetCameraViewport(PostProcessRenderContext context) {
-            context.camera.rect = _originalRect;
+            context.camera.pixelRect = _originalRect;
         }
 
         static protected NVIDIA.GraphicsDevice _device;
@@ -186,7 +220,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         CommandBuffer cmd;
-        internal void Render(PostProcessRenderContext context) {
+        internal void Render(PostProcessRenderContext context, bool _stereoRendering = false) {
 
             cmd = context.command;
             if(qualityMode == DLSS_Quality.Off) {
@@ -194,14 +228,30 @@ namespace UnityEngine.Rendering.PostProcessing
                 return;
             }
 
-            cmd.BeginSample("DLSS");
+            if (_stereoRendering)
+            {
+                isStereoRendering = _stereoRendering;
+                cmd.BeginSample("DLSS Right Eye");
+            }
+            else
+            {
+                cmd.BeginSample("DLSS");
+            }
 
-            if(state == null) {
+            if (state == null) {
                 state = new ViewState(device);
             }
 
-            dlssData.sharpening = Sharpening;
-            dlssData.sharpness = sharpness;
+            if (_stereoRendering)
+            {
+                dlssData.sharpening = context.deepLearningSuperSampling.Sharpening;
+                dlssData.sharpness = context.deepLearningSuperSampling.sharpness;
+            }
+            else
+            {
+                dlssData.sharpening = Sharpening;
+                dlssData.sharpness = sharpness;
+            }
 
             // Monitor for any resolution changes and recreate the DLSS context if necessary
             // We can't create an DLSS context without info from the post-processing context, so delay the initial setup until here
@@ -239,7 +289,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 _prevDisplaySize = displaySize;
             }
 
-            if(autoTextureUpdate) {
+            if (autoTextureUpdate && !_stereoRendering)
+            {
                 MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
 
@@ -259,7 +310,15 @@ namespace UnityEngine.Rendering.PostProcessing
             } else {
                 cmd.Blit(context.source, context.destination);
             }
-            cmd.EndSample("DLSS");
+
+            if (_stereoRendering)
+            {
+                cmd.EndSample("DLSS Right Eye");
+            }
+            else
+            {
+                cmd.EndSample("DLSS");
+            }
         }
 
         private void ApplyJitter(Camera camera, PostProcessRenderContext context) {

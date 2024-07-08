@@ -139,11 +139,13 @@ namespace UnityEngine.Rendering.PostProcessing
         /// DLSS upscaling & anti-aliasing settings for this camera.
         /// </summary>
         public DLSS dlss;
+        public DLSS dlssStereo;
 
         /// <summary>
         /// XeSS upscaling & anti-aliasing settings for this camera.
         /// </summary>
         public XeSS xess;
+        public XeSS xessStereo;
 
         /// <summary>
         /// Subpixel Morphological Anti-aliasing settings for this camera.
@@ -384,6 +386,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     dlss.ResetCameraViewport(m_CurrentContext);
+                    if (m_CurrentContext.stereoActive)
+                    {
+                        dlssStereo.ResetCameraViewport(m_CurrentContext);
+                    }
                 }
 #endif
 #if TND_XeSS
@@ -391,6 +397,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     xess.ResetCameraViewport(m_CurrentContext);
+                    if (m_CurrentContext.stereoActive)
+                    {
+                        xessStereo.ResetCameraViewport(m_CurrentContext);
+                    }
                 }
 
 #endif
@@ -436,10 +446,11 @@ namespace UnityEngine.Rendering.PostProcessing
             RuntimeUtilities.CreateIfNull(ref sgsr);
             RuntimeUtilities.CreateIfNull(ref fsr1);
             RuntimeUtilities.CreateIfNull(ref fsr3);
-            if (fsr3Stereo != null)
-                RuntimeUtilities.CreateIfNull(ref fsr3Stereo);
+            RuntimeUtilities.CreateIfNull(ref fsr3Stereo);
             RuntimeUtilities.CreateIfNull(ref dlss);
+            RuntimeUtilities.CreateIfNull(ref dlssStereo);
             RuntimeUtilities.CreateIfNull(ref xess);
+            RuntimeUtilities.CreateIfNull(ref xessStereo);
             RuntimeUtilities.CreateIfNull(ref subpixelMorphologicalAntialiasing);
             RuntimeUtilities.CreateIfNull(ref fastApproximateAntialiasing);
             RuntimeUtilities.CreateIfNull(ref dithering);
@@ -564,12 +575,20 @@ namespace UnityEngine.Rendering.PostProcessing
             if (m_CurrentContext.IsDLSSActive())
             {
                 dlss.Release();
+                if (dlssStereo != null)
+                {
+                    dlssStereo.Release();
+                }
             }
 #endif
 #if TND_XeSS
             if (m_CurrentContext.IsXeSSActive())
             {
                 xess.ReleaseResources();
+                if (xessStereo != null)
+                {
+                    xessStereo.ReleaseResources();
+                }
             }
 #endif
 
@@ -803,6 +822,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     antialiasingMode = fsr3.fallBackAA;
                 }
+                if (!fsr3Stereo.IsSupported())
+                {
+                    antialiasingMode = fsr3.fallBackAA;
+                }
 
                 fsr3.ConfigureCameraViewport(context);
                 if (context.stereoActive)
@@ -822,10 +845,17 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     antialiasingMode = dlss.fallBackAA;
                 }
-                if (!context.stereoActive || (context.stereoActive && context.camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right))
+                if (!dlssStereo.IsSupported())
                 {
-                    dlss.ConfigureCameraViewport(context);
+                    antialiasingMode = dlss.fallBackAA;
                 }
+
+                dlss.ConfigureCameraViewport(context);
+                if (context.stereoActive)
+                {
+                    dlssStereo.ConfigureCameraViewportRightEye(context);
+                }
+
                 context.SetRenderSize(dlss.renderSize);
 #else
                 antialiasingMode = dlss.fallBackAA;
@@ -836,12 +866,20 @@ namespace UnityEngine.Rendering.PostProcessing
 #if TND_XeSS
                 if (!xess.IsSupported())
                 {
+                    xess.ReleaseResources();
                     antialiasingMode = xess.fallBackAA;
                 }
-                if (!context.stereoActive || (context.stereoActive && context.camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right))
+                if (!xessStereo.IsSupported())
                 {
-                    xess.ConfigureCameraViewport(context);
+                    antialiasingMode = xess.fallBackAA;
                 }
+
+                xess.ConfigureCameraViewport(context);
+                if (context.stereoActive)
+                {
+                    //xessStereo.ConfigureCameraViewportRightEye(context);
+                }
+
                 context.SetRenderSize(xess.renderSize);
 #else
                 antialiasingMode = xess.fallBackAA;
@@ -864,9 +902,17 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
                     dlss.Release();
+                    if (dlssStereo != null)
+                    {
+                        dlssStereo.Release();
+                    }
 #endif
 #if TND_XeSS
                     xess.ReleaseResources();
+                    if (xessStereo != null)
+                    {
+                        xessStereo.ReleaseResources();
+                    }
 #endif
                 }
                 if (m_originalTargetTexture != null)
@@ -1130,6 +1176,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if (finalBlitToCameraTarget && m_CurrentContext.IsDLSSActive())
             {
                 dlss.ResetCameraViewport(m_CurrentContext);
+                if (m_CurrentContext.stereoActive)
+                {
+                    dlssStereo.ResetCameraViewport(m_CurrentContext);
+                }
             }
 #endif
 #if TND_XeSS
@@ -1137,6 +1187,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if (finalBlitToCameraTarget && m_CurrentContext.IsXeSSActive())
             {
                 xess.ResetCameraViewport(m_CurrentContext);
+                if (m_CurrentContext.stereoActive)
+                {
+                    xessStereo.ResetCameraViewport(m_CurrentContext);
+                }
             }
 #endif
 
@@ -1665,31 +1719,57 @@ namespace UnityEngine.Rendering.PostProcessing
                 else if (context.IsDLSSActive())
                 {
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
-                    dlss.ConfigureJitteredProjectionMatrix(context);
+                    if (!context.stereoActive || context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
+                    {
+                        dlss.ConfigureJitteredProjectionMatrix(context);
 
-                    // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
-                    context.SetRenderSize(dlss.displaySize);
+                        // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
+                        context.SetRenderSize(dlss.displaySize);
 
-                    var dlssTarget = m_TargetPool.Get();
-                    var finalDestination = context.destination;
-                    context.GetScreenSpaceTemporaryRT(cmd, dlssTarget, 0, context.sourceFormat, isUpscaleOutput: true);
-                    context.destination = dlssTarget;
-                    dlss.Render(context);
-                    context.source = dlssTarget;
-                    context.destination = finalDestination;
+                        var dlssTarget = m_TargetPool.Get();
+                        var finalDestination = context.destination;
+                        context.GetScreenSpaceTemporaryRT(cmd, dlssTarget, 0, context.sourceFormat, isUpscaleOutput: true);
+                        context.destination = dlssTarget;
+                        dlss.Render(context);
+                        context.source = dlssTarget;
+                        context.destination = finalDestination;
 
-                    // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
-                    RuntimeUtilities.AllowDynamicResolution = false;
+                        // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
+                        RuntimeUtilities.AllowDynamicResolution = false;
 
-                    if (lastTarget > -1)
-                        cmd.ReleaseTemporaryRT(lastTarget);
+                        if (lastTarget > -1)
+                            cmd.ReleaseTemporaryRT(lastTarget);
 
-                    lastTarget = dlssTarget;
+                        lastTarget = dlssTarget;
+                    }
+                    else if (context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+                    {
+                        //Set the upscaler's output to full display resolution, as well as for all following post-processing effects
+                        context.SetRenderSize(dlssStereo.displaySize);
+
+                        var dlssTarget = m_TargetPool.Get();
+                        var finalDestination = context.destination;
+                        context.GetScreenSpaceTemporaryRT(cmd, dlssTarget, 0, context.sourceFormat, isUpscaleOutput: true);
+                        context.destination = dlssTarget;
+                        dlssStereo.Render(context, true);
+                        context.source = dlssTarget;
+                        context.destination = finalDestination;
+
+                        // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
+                        RuntimeUtilities.AllowDynamicResolution = false;
+
+                        if (lastTarget > -1)
+                            cmd.ReleaseTemporaryRT(lastTarget);
+
+                        lastTarget = dlssTarget;
+                    }
 #endif
                 }
                 else if (context.IsXeSSActive())
                 {
 #if TND_XeSS
+                    //if (!context.stereoActive || context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
+                    //{
                     xess.ConfigureJitteredProjectionMatrix(context);
 
                     // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
@@ -1710,6 +1790,28 @@ namespace UnityEngine.Rendering.PostProcessing
                         cmd.ReleaseTemporaryRT(lastTarget);
 
                     lastTarget = xessTarget;
+                    //}
+                    //else if (context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
+                    //{
+                    //    //Set the upscaler's output to full display resolution, as well as for all following post-processing effects
+                    //    context.SetRenderSize(xessStereo.displaySize);
+
+                    //    var xessTarget = m_TargetPool.Get();
+                    //    var finalDestination = context.destination;
+                    //    context.GetScreenSpaceTemporaryRT(cmd, xessTarget, 0, context.sourceFormat, isUpscaleOutput: true);
+                    //    context.destination = xessTarget;
+                    //    //xessStereo.Render(context, true);
+                    //    context.source = xessTarget;
+                    //    context.destination = finalDestination;
+
+                    //    // Disable dynamic scaling on render targets, so all subsequent effects will be applied on the full resolution upscaled image 
+                    //    RuntimeUtilities.AllowDynamicResolution = false;
+
+                    //    if (lastTarget > -1)
+                    //        cmd.ReleaseTemporaryRT(lastTarget);
+
+                    //    lastTarget = xessTarget;
+                    //}
 #endif
                 }
             skipTAA:

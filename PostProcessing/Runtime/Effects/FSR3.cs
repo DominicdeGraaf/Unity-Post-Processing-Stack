@@ -265,10 +265,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 return;
             }
 
-            if (autoTextureUpdate)
-            {
-                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
-            }
+        
 
             if (_stereoRendering)
             {
@@ -278,6 +275,10 @@ namespace UnityEngine.Rendering.PostProcessing
             else
             {
                 cmd.BeginSample("FSR3");
+            }
+            if (autoTextureUpdate && !isStereoRendering)
+            {
+                MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
 
             // Monitor for any resolution changes and recreate the FSR3 context if necessary
