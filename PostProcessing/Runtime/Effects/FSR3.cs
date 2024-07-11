@@ -261,6 +261,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var cmd = context.command;
             if (qualityMode == Fsr3.QualityMode.Off)
             {
+                Release();
                 cmd.Blit(context.source, context.destination);
                 return;
             }

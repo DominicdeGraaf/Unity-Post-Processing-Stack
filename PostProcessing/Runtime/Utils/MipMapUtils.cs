@@ -2,6 +2,7 @@ using UnityEngine;
 
 public static class MipMapUtils
 {
+    private static bool _IsReset = true;
     public static float CalculateMipMapBias(float renderWidth, float displayWidth, float mipmapBiasOverride)
     {
         return (Mathf.Log(renderWidth / displayWidth, 2f) - 1) * mipmapBiasOverride;
@@ -13,6 +14,7 @@ public static class MipMapUtils
     /// </summary>
     public static void OnMipMapSingleTexture(Texture texture, float renderWidth, float displayWidth, float mipmapBiasOverride)
     {
+        _IsReset = false;
         OnMipMapSingleTexture(texture, CalculateMipMapBias(renderWidth, displayWidth, mipmapBiasOverride));
     }
 
@@ -22,6 +24,7 @@ public static class MipMapUtils
     /// </summary>
     public static void OnMipMapSingleTexture(Texture texture, float mapmapBias)
     {
+        _IsReset = false;
         texture.mipMapBias = mapmapBias;
     }
 
@@ -31,6 +34,7 @@ public static class MipMapUtils
     /// </summary>
     public static void OnMipMapAllTextures(float renderWidth, float displayWidth, float mipmapBiasOverride)
     {
+        _IsReset = false;
         OnMipMapAllTextures(CalculateMipMapBias(renderWidth, displayWidth, mipmapBiasOverride));
     }
 
@@ -40,6 +44,7 @@ public static class MipMapUtils
     /// </summary>
     public static void OnMipMapAllTextures(float mapmapBias)
     {
+        _IsReset = false;
         Texture[] m_allTextures = Resources.FindObjectsOfTypeAll(typeof(Texture)) as Texture[];
         for (int i = 0; i < m_allTextures.Length; i++)
         {
@@ -52,18 +57,23 @@ public static class MipMapUtils
     /// </summary>
     public static void OnResetAllMipMaps()
     {
-        Texture[] m_allTextures = Resources.FindObjectsOfTypeAll(typeof(Texture)) as Texture[];
-        for (int i = 0; i < m_allTextures.Length; i++)
+        if (!_IsReset)
         {
-            m_allTextures[i].mipMapBias = 0;
+            _IsReset = true;
+            Texture[] m_allTextures = Resources.FindObjectsOfTypeAll(typeof(Texture)) as Texture[];
+            for (int i = 0; i < m_allTextures.Length; i++)
+            {
+                m_allTextures[i].mipMapBias = 0;
+            }
         }
+
     }
 
     public static void AutoUpdateMipMaps(float renderWidth, float displayWidth, float mipMapBiasOverride, float updateFrequency, ref float prevMipMapBias, ref float mipMapTimer, ref ulong previousLength)
     {
         mipMapTimer += Time.deltaTime;
-
-        if(mipMapTimer > updateFrequency)
+        _IsReset = false;
+        if (mipMapTimer > updateFrequency)
         {
             mipMapTimer = 0;
 

@@ -165,7 +165,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.camera.stereoEnabled)
             {
 #if UNITY_STANDALONE
-                camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+                camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
 #else
                 ScalableBufferManager.ResizeBuffers(1 / scaleFactor, 1 / scaleFactor);
 #endif
@@ -181,7 +181,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.camera.stereoEnabled)
             {
 #if UNITY_STANDALONE
-                context.camera.pixelRect = _originalRect;
+                context.camera.rect = _originalRect;
 #else
                 ScalableBufferManager.ResizeBuffers(1, 1);
 #endif
@@ -198,6 +198,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var cmd = context.command;
             if (qualityMode == FSR.QualityMode.Off)
             {
+                Release();
                 scaleFactor = GetScaling();
                 cmd.Blit(context.source, context.destination);
                 return;

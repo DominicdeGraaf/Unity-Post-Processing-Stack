@@ -82,11 +82,15 @@ namespace UnityEngine.Rendering.PostProcessing
         public void OnResetAllMipMaps() {
             MipMapUtils.OnResetAllMipMaps();
         }
+        public void Release()
+        {
+            MipMapUtils.OnResetAllMipMaps();
+        }
 
         public void ConfigureCameraViewport(PostProcessRenderContext context)
         {
             Camera camera = context.camera;
-            _originalRect = camera.pixelRect;
+            _originalRect = camera.rect;
 
             _scaleFactor = GetScaling();
 
@@ -96,14 +100,14 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.camera.stereoEnabled)
             {
 #if UNITY_STANDALONE
-                camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+                camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
 #else
                 ScalableBufferManager.ResizeBuffers(1 / _scaleFactor, 1 / _scaleFactor);
 #endif
             }
             else
             {
-                camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+                camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
             }
         }
 
@@ -112,14 +116,14 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.camera.stereoEnabled)
             {
 #if UNITY_STANDALONE
-                context.camera.pixelRect = _originalRect;
+                context.camera.rect = _originalRect;
 #else
                 ScalableBufferManager.ResizeBuffers(1, 1);
 #endif
             }
             else
             {
-                context.camera.pixelRect = _originalRect;
+                context.camera.rect = _originalRect;
             }
         }
 
@@ -127,7 +131,9 @@ namespace UnityEngine.Rendering.PostProcessing
           
 
             var cmd = context.command;
-            if(qualityMode == SGSR_Quality.Off) {
+            if(qualityMode == SGSR_Quality.Off)
+            {
+                Release();
                 cmd.Blit(context.source, context.destination);
                 return;
             }

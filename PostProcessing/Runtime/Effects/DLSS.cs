@@ -154,7 +154,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             var camera = context.camera;
-            _originalRect = camera.pixelRect;
+            _originalRect = camera.rect;
 
             // Determine the desired rendering and display resolutions
             displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
@@ -163,7 +163,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
             camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
-            camera.pixelRect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
+            camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
         }
 
         public void ConfigureCameraViewportRightEye(PostProcessRenderContext context)
@@ -188,11 +188,11 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
             camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
-            camera.pixelRect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
+            camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
         }
 
         internal void ResetCameraViewport(PostProcessRenderContext context) {
-            context.camera.pixelRect = _originalRect;
+            context.camera.rect = _originalRect;
         }
 
         static protected NVIDIA.GraphicsDevice _device;
@@ -224,6 +224,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             cmd = context.command;
             if(qualityMode == DLSS_Quality.Off) {
+                Release();
                 cmd.Blit(context.source, context.destination);
                 return;
             }

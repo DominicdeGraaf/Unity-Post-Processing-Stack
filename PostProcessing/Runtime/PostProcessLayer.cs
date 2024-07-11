@@ -450,7 +450,7 @@ namespace UnityEngine.Rendering.PostProcessing
             RuntimeUtilities.CreateIfNull(ref dlss);
             RuntimeUtilities.CreateIfNull(ref dlssStereo);
             RuntimeUtilities.CreateIfNull(ref xess);
-            RuntimeUtilities.CreateIfNull(ref xessStereo);
+            //RuntimeUtilities.CreateIfNull(ref xessStereo);
             RuntimeUtilities.CreateIfNull(ref subpixelMorphologicalAntialiasing);
             RuntimeUtilities.CreateIfNull(ref fastApproximateAntialiasing);
             RuntimeUtilities.CreateIfNull(ref dithering);
@@ -557,6 +557,12 @@ namespace UnityEngine.Rendering.PostProcessing
             if (m_CurrentContext.IsFSR1Active())
             {
                 fsr1.Release();
+            }
+#endif
+#if TND_SGSR
+            if (m_CurrentContext.IsSGSRActive())
+            {
+                sgsr.Release();
             }
 #endif
 #if TND_FSR3 || AEG_FSR3
@@ -869,10 +875,10 @@ namespace UnityEngine.Rendering.PostProcessing
                     xess.ReleaseResources();
                     antialiasingMode = xess.fallBackAA;
                 }
-                if (!xessStereo.IsSupported())
-                {
-                    antialiasingMode = xess.fallBackAA;
-                }
+                //if (!xessStereo.IsSupported())
+                //{
+                //    antialiasingMode = xess.fallBackAA;
+                //}
 
                 xess.ConfigureCameraViewport(context);
                 if (context.stereoActive)
