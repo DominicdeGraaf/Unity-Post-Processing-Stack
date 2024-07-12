@@ -91,7 +91,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipmapSingleTexture(Texture texture) {
+        public void OnMipmapSingleTexture(Texture texture)
+        {
             MipMapUtils.OnMipMapSingleTexture(texture, renderSize.x, displaySize.x, mipMapBiasOverride);
         }
 
@@ -99,39 +100,47 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates all textures currently loaded to the set MipMap Bias.
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipMapAllTextures() {
+        public void OnMipMapAllTextures()
+        {
             MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
-        public void OnResetAllMipMaps() {
+        public void OnResetAllMipMaps()
+        {
             MipMapUtils.OnResetAllMipMaps();
         }
 
-        public bool IsSupported() {
+        public bool IsSupported()
+        {
             return SystemInfo.supportsComputeShaders;
         }
 
-        internal void Release() {
+        internal void Release()
+        {
             computeShaderEASU = null;
             computeShaderRCAS = null;
-            if(outputImage) {
+            if (outputImage)
+            {
                 outputImage.Release();
                 outputImage = null;
             }
 
-            if(EASUParametersCB != null) {
+            if (EASUParametersCB != null)
+            {
                 EASUParametersCB.Dispose();
                 EASUParametersCB = null;
             }
 
-            if(outputImage2) {
+            if (outputImage2)
+            {
                 outputImage2.Release();
                 outputImage2 = null;
             }
 
-            if(RCASParametersCB != null) {
+            if (RCASParametersCB != null)
+            {
                 RCASParametersCB.Dispose();
                 RCASParametersCB = null;
             }
@@ -139,7 +148,8 @@ namespace UnityEngine.Rendering.PostProcessing
             MipMapUtils.OnResetAllMipMaps();
         }
 
-        public void Init() {
+        public void Init()
+        {
             _callbacks = callbacksFactory(null);
 
             computeShaderEASU = (ComputeShader)Resources.Load("FSR1/EdgeAdaptiveScaleUpsampling");
@@ -160,6 +170,10 @@ namespace UnityEngine.Rendering.PostProcessing
             // Determine the desired rendering and display resolutions
             displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
             renderSize = new Vector2Int((int)(displaySize.x / scaleFactor), (int)(displaySize.y / scaleFactor));
+            if (qualityMode == FSR.QualityMode.Off)
+            {
+                Release();
+            }
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
             if (context.camera.stereoEnabled)
@@ -192,13 +206,13 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        internal void Render(PostProcessRenderContext context) {
- 
+        internal void Render(PostProcessRenderContext context)
+        {
+
             //FSR1
             var cmd = context.command;
             if (qualityMode == FSR.QualityMode.Off)
             {
-                Release();
                 scaleFactor = GetScaling();
                 cmd.Blit(context.source, context.destination);
                 return;
@@ -214,7 +228,8 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             cmd.BeginSample("FSR1");
 
-            if(outputImage == null || outputImage2 == null || displaySize.x != _prevDisplaySize.x || displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode || Sharpening != _prevSharpening) {
+            if (outputImage == null || outputImage2 == null || displaySize.x != _prevDisplaySize.x || displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode || Sharpening != _prevSharpening)
+            {
                 _prevQualityMode = qualityMode;
                 _prevDisplaySize = displaySize;
                 _prevSharpening = Sharpening;
@@ -227,7 +242,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 float mipBias = -Mathf.Lerp(0.38f, 1f, normalizedScale); //Ultra Quality -0.38f, Quality -0.58f, Balanced -0.79f, Performance -1f
 
                 //EASU
-                if(outputImage)
+                if (outputImage)
                     outputImage.Release();
                 outputImage = new RenderTexture(displaySize.x, displaySize.y, 0, context.sourceFormat, RenderTextureReadWrite.Linear);
                 outputImage.enableRandomWrite = true;
@@ -235,8 +250,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 outputImage.Create();
 
                 //RCAS
-                if(Sharpening) {
-                    if(outputImage2)
+                if (Sharpening)
+                {
+                    if (outputImage2)
                         outputImage2.Release();
                     outputImage2 = new RenderTexture(displaySize.x, displaySize.y, 0, context.sourceFormat, RenderTextureReadWrite.Linear);
                     outputImage2.enableRandomWrite = true;
@@ -263,7 +279,8 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.DispatchCompute(computeShaderEASU, 0, dispatchX, dispatchY, 1); //main
 
             //RCAS
-            if(Sharpening) {
+            if (Sharpening)
+            {
                 cmd.SetComputeBufferParam(computeShaderRCAS, 1, _RCASParameters, RCASParametersCB);
                 cmd.SetComputeFloatParam(computeShaderRCAS, _RCASScale, 1 - sharpness);
                 cmd.DispatchCompute(computeShaderRCAS, 1, 1, 1, 1); //init
@@ -315,7 +332,8 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             private readonly PostProcessResources _resources;
 
-            public Callbacks() {
+            public Callbacks()
+            {
             }
         }
 #endif

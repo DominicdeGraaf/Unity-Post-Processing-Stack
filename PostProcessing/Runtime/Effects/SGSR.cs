@@ -57,7 +57,8 @@ namespace UnityEngine.Rendering.PostProcessing
         private float _prevMipMapBias;
         private float _mipMapTimer = float.MaxValue;
 
-        public bool IsSupported() {
+        public bool IsSupported()
+        {
             return BlitMaterial.shader.isSupported;
         }
 
@@ -65,7 +66,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipmapSingleTexture(Texture texture) {
+        public void OnMipmapSingleTexture(Texture texture)
+        {
             MipMapUtils.OnMipMapSingleTexture(texture, renderSize.x, displaySize.x, mipMapBiasOverride);
         }
 
@@ -73,13 +75,15 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates all textures currently loaded to the set MipMap Bias.
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipMapAllTextures() {
+        public void OnMipMapAllTextures()
+        {
             MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
-        public void OnResetAllMipMaps() {
+        public void OnResetAllMipMaps()
+        {
             MipMapUtils.OnResetAllMipMaps();
         }
         public void Release()
@@ -96,7 +100,10 @@ namespace UnityEngine.Rendering.PostProcessing
 
             displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
             renderSize = new Vector2Int((int)(displaySize.x / _scaleFactor), (int)(displaySize.y / _scaleFactor));
-
+            if (qualityMode == SGSR_Quality.Off)
+            {
+                Release();
+            }
             if (context.camera.stereoEnabled)
             {
 #if UNITY_STANDALONE
@@ -127,17 +134,18 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        internal void Render(PostProcessRenderContext context) {
-          
+        internal void Render(PostProcessRenderContext context)
+        {
+
 
             var cmd = context.command;
-            if(qualityMode == SGSR_Quality.Off)
+            if (qualityMode == SGSR_Quality.Off)
             {
-                Release();
                 cmd.Blit(context.source, context.destination);
                 return;
             }
-            if(autoTextureUpdate) {
+            if (autoTextureUpdate)
+            {
                 MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
             cmd.BeginSample("SGSR");
@@ -154,8 +162,10 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.EndSample("SGSR");
         }
 
-        private float GetScaling() {
-            switch(qualityMode) {
+        private float GetScaling()
+        {
+            switch (qualityMode)
+            {
                 case SGSR_Quality.Off:
                     return 1.0f;
                 case SGSR_Quality.Native:
@@ -182,7 +192,8 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             get
             {
-                if(_blitMaterial == null) {
+                if (_blitMaterial == null)
+                {
                     _blitMaterial = new Material(Shader.Find("Hidden/SGSR_BlitShader_BIRP"));
                 }
 
@@ -198,7 +209,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             get
             {
-                if(_fullscreenMesh != null)
+                if (_fullscreenMesh != null)
                     return _fullscreenMesh;
 
                 float topV = 1.0f;

@@ -138,7 +138,9 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {
-            if(qualityMode == DLSS_Quality.Off) {
+            if(qualityMode == DLSS_Quality.Off)
+            {
+                Release();
                 return;
             }
             ApplyJitter(context.camera, context);
@@ -224,7 +226,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
             cmd = context.command;
             if(qualityMode == DLSS_Quality.Off) {
-                Release();
                 cmd.Blit(context.source, context.destination);
                 return;
             }

@@ -43,7 +43,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         public float jitterX, jitterY;
 
-        private XeSSQuality _prevQuality;
+        private XeSSQuality _prevQuality = XeSSQuality.Off;
         private IntelQuality _intelQuality;
         private Vector2Int _prevDisplayResolution;
 
@@ -67,6 +67,9 @@ namespace UnityEngine.Rendering.PostProcessing
         private float _prevMipMapBias;
         private float _mipMapTimer = float.MaxValue;
 
+        private bool _supportedChecked = false;
+        private bool _supported = false;
+
         private Material _sharpeningMaterial;
 
         private GraphicsDevice _graphicsDevice;
@@ -86,10 +89,13 @@ namespace UnityEngine.Rendering.PostProcessing
         public bool IsSupported()
         {
 #if TND_XeSS
-            return GraphicsDevice.CreateXeSSContext() >= 0;
-#else
-            return false;
+            if (!_supportedChecked)
+            {
+                _supportedChecked = true;
+                _supported = GraphicsDevice.CreateXeSSContext() >= 0;
+            }
 #endif
+            return _supported;
         }
 
         /// <summary>
@@ -125,6 +131,8 @@ namespace UnityEngine.Rendering.PostProcessing
             displaySize = new Vector2Int(context.width, context.height);
             if (displaySize != _prevDisplayResolution || qualityMode != _prevQuality)
             {
+                GraphicsDevice.CreateXeSSContext();
+
                 _prevDisplayResolution = displaySize;
                 _prevQuality = qualityMode;
                 _initializeContext = true;
@@ -132,6 +140,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 (_scaleFactor, _intelQuality) = XeSS_Base.GetScalingFromQualityMode(qualityMode);
 
                 renderSize = new Vector2Int((int)(displaySize.x / _scaleFactor), (int)(displaySize.y / _scaleFactor));
+
+                if (qualityMode == XeSSQuality.Off)
+                {
+                    ReleaseResources();
+                    return;
+                }
 
                 if (_xessInput != null)
                 {
@@ -173,6 +187,7 @@ namespace UnityEngine.Rendering.PostProcessing
         internal void Render(PostProcessRenderContext context)
         {
             var cmd = context.command;
+
             if (qualityMode == XeSSQuality.Off)
             {
                 cmd.Blit(context.source, context.destination);
@@ -213,7 +228,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 _motionVectorBuffer = Shader.GetGlobalTexture(_idMotionVectorTexture);
             }
 
-            if (_xessInput != null)
+            if (_xessInput != null && _depthBuffer != null && _motionVectorBuffer != null)
             {
                 cmd.Blit(context.source, _xessInput);
                 var executeParam = new XeSSExecuteParam()
@@ -264,7 +279,7 @@ namespace UnityEngine.Rendering.PostProcessing
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
-        internal void ReleaseResources()
+        private void ReleaseResources()
         {
             GraphicsDevice.ReleaseResources();
 
@@ -277,6 +292,13 @@ namespace UnityEngine.Rendering.PostProcessing
                 _xessOutput = null;
                 _sharpeningOutput = null;
             }
+
+            OnResetAllMipMaps();
+        }
+
+        internal void Release()
+        {
+            ReleaseResources();
 
             //Reset previous display resolution to trigger reinitialization on reactivation
             _prevDisplayResolution = Vector2Int.zero;

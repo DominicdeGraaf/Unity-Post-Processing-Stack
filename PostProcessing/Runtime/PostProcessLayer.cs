@@ -590,10 +590,10 @@ namespace UnityEngine.Rendering.PostProcessing
 #if TND_XeSS
             if (m_CurrentContext.IsXeSSActive())
             {
-                xess.ReleaseResources();
+                xess.Release();
                 if (xessStereo != null)
                 {
-                    xessStereo.ReleaseResources();
+                    xessStereo.Release();
                 }
             }
 #endif
@@ -872,7 +872,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #if TND_XeSS
                 if (!xess.IsSupported())
                 {
-                    xess.ReleaseResources();
+                    xess.Release();
                     antialiasingMode = xess.fallBackAA;
                 }
                 //if (!xessStereo.IsSupported())
@@ -914,10 +914,10 @@ namespace UnityEngine.Rendering.PostProcessing
                     }
 #endif
 #if TND_XeSS
-                    xess.ReleaseResources();
+                    xess.Release();
                     if (xessStereo != null)
                     {
-                        xessStereo.ReleaseResources();
+                        xessStereo.Release();
                     }
 #endif
                 }
