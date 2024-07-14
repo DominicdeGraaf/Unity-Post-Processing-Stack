@@ -456,13 +456,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
             }
 
-            //TND sharpening shader breaks the output in editor, but it works fine in a build!
-            if (context.camera.stereoEnabled)
-            {
-                Debug.LogWarning("Temporarily disabled FSR 3 Sharpening, as its broken for VR, will be reenabled in an upcoming store update!");
-                Sharpening = false;
-            }
-
             if (!isStereoRendering)
             {
                 if (exposureSource == ExposureSource.Manual && exposure != null)
