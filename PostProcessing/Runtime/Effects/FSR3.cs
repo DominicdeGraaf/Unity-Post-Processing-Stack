@@ -39,8 +39,6 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(0, 1)]
         public float antiGhosting = 0.0f;
 #if TND_FSR3 || AEG_FSR3
-        public Func<PostProcessRenderContext, IFsr3Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks(context.resources);
-
         [Tooltip("Standard scaling ratio presets.")]
 
         [Header("FSR 3 Settings")]
@@ -121,12 +119,11 @@ namespace UnityEngine.Rendering.PostProcessing
             get; set;
         }
 
-        private Fsr3Context _fsrContext;
+        private Fsr3UpscalerContext _fsrContext;
+        private Fsr3UpscalerAssets _fsrAssets;
         private Vector2Int _maxRenderSize;
         private Vector2Int _displaySize;
         private bool _resetHistory;
-
-        private IFsr3Callbacks _callbacks;
 
         private readonly Fsr3.DispatchDescription _dispatchDescription = new Fsr3.DispatchDescription();
         private readonly Fsr3.GenerateReactiveDescription _genReactiveDescription = new Fsr3.GenerateReactiveDescription();
@@ -291,10 +288,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 _mipMapTimer = Mathf.Infinity;
             }
 
-            cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputColor, context.source);
-            cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputDepth, BuiltinRenderTextureType.CameraTarget, RenderTextureSubElement.Depth);
-            cmd.SetGlobalTexture(Fsr3ShaderIDs.SrvInputMotionVectors, BuiltinRenderTextureType.MotionVectors);
-
             SetupDispatchDescription(context);
 
             if (autoGenerateReactiveMask)
@@ -304,7 +297,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 var scaledRenderSize = _genReactiveDescription.RenderSize;
                 cmd.GetTemporaryRT(Fsr3ShaderIDs.UavAutoReactive, scaledRenderSize.x, scaledRenderSize.y, 0, default, GraphicsFormat.R8_UNorm, 1, true);
                 _fsrContext.GenerateReactiveMask(_genReactiveDescription, cmd);
-                _dispatchDescription.Reactive = Fsr3ShaderIDs.UavAutoReactive;
+                _dispatchDescription.Reactive = new ResourceView(Fsr3ShaderIDs.UavAutoReactive);
             }
 
             _fsrContext.Dispatch(_dispatchDescription, cmd);
@@ -342,8 +335,11 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.camera.stereoEnabled)
                 flags |= Fsr3.InitializationFlags.EnableDisplayResolutionMotionVectors;
 
-            _callbacks = callbacksFactory(context);
-            _fsrContext = Fsr3.CreateContext(_displaySize, _maxRenderSize, _callbacks, flags);
+            if (_fsrAssets == null)
+            {
+                _fsrAssets = Resources.Load<Fsr3UpscalerAssets>("Fsr3UpscalerAssets");
+            }
+            _fsrContext = Fsr3.CreateContext(_displaySize, _maxRenderSize, _fsrAssets.shaders, flags);
         }
 
         private void DestroyFsrContext()
@@ -430,12 +426,13 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Set up the main FSR3 dispatch parameters
             // The input textures are left blank here, as they get bound directly through SetGlobalTexture elsewhere in this source file
-            _dispatchDescription.Color = null;
-            _dispatchDescription.Depth = null;
-            _dispatchDescription.MotionVectors = null;
-            _dispatchDescription.Exposure = null;
-            _dispatchDescription.Reactive = null;
-            _dispatchDescription.TransparencyAndComposition = null;
+            _dispatchDescription.Color = new ResourceView(context.source, RenderTextureSubElement.Color);
+            _dispatchDescription.Depth = new ResourceView(BuiltinRenderTextureType.CameraTarget, RenderTextureSubElement.Depth);
+            _dispatchDescription.MotionVectors = new ResourceView(BuiltinRenderTextureType.MotionVectors);
+
+            _dispatchDescription.Exposure = ResourceView.Unassigned;
+            _dispatchDescription.Reactive = ResourceView.Unassigned;
+            _dispatchDescription.TransparencyAndComposition = ResourceView.Unassigned;
 
             var scaledRenderSize = GetScaledRenderSize(context.camera);
 
@@ -459,22 +456,22 @@ namespace UnityEngine.Rendering.PostProcessing
             if (!isStereoRendering)
             {
                 if (exposureSource == ExposureSource.Manual && exposure != null)
-                    _dispatchDescription.Exposure = exposure;
+                    _dispatchDescription.Exposure = new ResourceView(exposure);
                 if (exposureSource == ExposureSource.Unity)
-                    _dispatchDescription.Exposure = context.autoExposureTexture;
+                    _dispatchDescription.Exposure = new ResourceView(context.autoExposureTexture);
                 if (reactiveMask != null)
-                    _dispatchDescription.Reactive = reactiveMask;
+                    _dispatchDescription.Reactive = new ResourceView(reactiveMask);
                 if (transparencyAndCompositionMask != null)
-                    _dispatchDescription.TransparencyAndComposition = transparencyAndCompositionMask;
+                    _dispatchDescription.TransparencyAndComposition = new ResourceView(transparencyAndCompositionMask);
 
-                _dispatchDescription.Output = context.destination;
+                _dispatchDescription.Output = new ResourceView(context.destination, RenderTextureSubElement.Color);
                 _dispatchDescription.PreExposure = preExposure;
 
                 _dispatchDescription.EnableSharpening = Sharpening;
                 _dispatchDescription.Sharpness = sharpness;
 
                 _dispatchDescription.RenderSize = scaledRenderSize;
-                _dispatchDescription.InputResourceSize = scaledRenderSize;
+                _dispatchDescription.UpscaleSize = displaySize;
                 _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
                 _dispatchDescription.CameraNear = camera.nearClipPlane;
                 _dispatchDescription.CameraFar = camera.farClipPlane;
@@ -484,34 +481,26 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 // Set up the parameters for the optional experimental auto-TCR feature
                 _dispatchDescription.EnableAutoReactive = autoGenerateTransparencyAndComposition;
-                if (autoGenerateTransparencyAndComposition)
-                {
-                    _dispatchDescription.ColorOpaqueOnly = colorOpaqueOnly;
-                    _dispatchDescription.AutoTcThreshold = generateTransparencyAndCompositionParameters.autoTcThreshold;
-                    _dispatchDescription.AutoTcScale = generateTransparencyAndCompositionParameters.autoTcScale;
-                    _dispatchDescription.AutoReactiveScale = generateTransparencyAndCompositionParameters.autoReactiveScale;
-                    _dispatchDescription.AutoReactiveMax = generateTransparencyAndCompositionParameters.autoReactiveMax;
-                }
             }
             else
             {
                 if (exposureSource == ExposureSource.Manual && context.superResolution3.exposure != null)
-                    _dispatchDescription.Exposure = context.superResolution3.exposure;
+                    _dispatchDescription.Exposure = new ResourceView(context.superResolution3.exposure);
                 if (exposureSource == ExposureSource.Unity)
-                    _dispatchDescription.Exposure = context.autoExposureTexture;
+                    _dispatchDescription.Exposure = new ResourceView(context.autoExposureTexture);
                 if (reactiveMask != null)
-                    _dispatchDescription.Reactive = context.superResolution3.reactiveMask;
+                    _dispatchDescription.Reactive = new ResourceView(context.superResolution3.reactiveMask);
                 if (transparencyAndCompositionMask != null)
-                    _dispatchDescription.TransparencyAndComposition = context.superResolution3.transparencyAndCompositionMask;
+                    _dispatchDescription.TransparencyAndComposition = new ResourceView(context.superResolution3.transparencyAndCompositionMask);
 
-                _dispatchDescription.Output = context.destination;
+                _dispatchDescription.Output = new ResourceView(context.destination);
                 _dispatchDescription.PreExposure = context.superResolution3.preExposure;
                 _dispatchDescription.EnableSharpening = context.superResolution3.Sharpening;
 
                 _dispatchDescription.Sharpness = context.superResolution3.sharpness;
 
                 _dispatchDescription.RenderSize = scaledRenderSize;
-                _dispatchDescription.InputResourceSize = scaledRenderSize;
+                _dispatchDescription.UpscaleSize = displaySize;
                 _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
                 _dispatchDescription.CameraNear = camera.nearClipPlane;
                 _dispatchDescription.CameraFar = camera.farClipPlane;
@@ -520,26 +509,15 @@ namespace UnityEngine.Rendering.PostProcessing
                 _dispatchDescription.Reset = context.superResolution3._resetHistory;
 
                 autoGenerateReactiveMask = context.superResolution3.autoGenerateReactiveMask;
-
-                // Set up the parameters for the optional experimental auto-TCR feature
-                _dispatchDescription.EnableAutoReactive = context.superResolution3.autoGenerateTransparencyAndComposition;
-                if (context.superResolution3.autoGenerateTransparencyAndComposition)
-                {
-                    _dispatchDescription.ColorOpaqueOnly = colorOpaqueOnly;
-                    _dispatchDescription.AutoTcThreshold = context.superResolution3.generateTransparencyAndCompositionParameters.autoTcThreshold;
-                    _dispatchDescription.AutoTcScale = context.superResolution3.generateTransparencyAndCompositionParameters.autoTcScale;
-                    _dispatchDescription.AutoReactiveScale = context.superResolution3.generateTransparencyAndCompositionParameters.autoReactiveScale;
-                    _dispatchDescription.AutoReactiveMax = context.superResolution3.generateTransparencyAndCompositionParameters.autoReactiveMax;
-                }
             }
         }
 
         private void SetupAutoReactiveDescription(PostProcessRenderContext context)
         {
             // Set up the parameters to auto-generate a reactive mask
-            _genReactiveDescription.ColorOpaqueOnly = colorOpaqueOnly;
-            _genReactiveDescription.ColorPreUpscale = null;
-            _genReactiveDescription.OutReactive = null;
+           _genReactiveDescription.ColorOpaqueOnly = new ResourceView(colorOpaqueOnly);
+            _genReactiveDescription.ColorPreUpscale = new ResourceView(context.source);
+            _genReactiveDescription.OutReactive = new ResourceView(Fsr3ShaderIDs.UavAutoReactive);
             _genReactiveDescription.RenderSize = GetScaledRenderSize(context.camera);
 
             if (!isStereoRendering)
@@ -564,25 +542,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 return _maxRenderSize;
 
             return new Vector2Int(Mathf.CeilToInt(_maxRenderSize.x * ScalableBufferManager.widthScaleFactor), Mathf.CeilToInt(_maxRenderSize.y * ScalableBufferManager.heightScaleFactor));
-        }
-
-        private class Callbacks : Fsr3CallbacksBase
-        {
-            private readonly PostProcessResources _resources;
-
-            public Callbacks(PostProcessResources resources)
-            {
-                _resources = resources;
-            }
-
-            public override ComputeShader LoadComputeShader(string name)
-            {
-                return Resources.Load<ComputeShader>(name);
-            }
-
-            public override void UnloadComputeShader(ComputeShader shader)
-            {
-            }
         }
 #endif
     }

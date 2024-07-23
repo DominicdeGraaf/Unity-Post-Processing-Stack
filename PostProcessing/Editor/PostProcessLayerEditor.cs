@@ -118,8 +118,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
-            new GUIContent("FidelityFX Super Resolution 3 (FSR3)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
+            new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Deep Learning Super Sampling (DLSS)"),
             new GUIContent("Xe Super Sampling (XeSS)"),
         };
@@ -131,8 +131,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
-            new GUIContent("FidelityFX Super Resolution 3 (FSR3)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
+            new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Xe Super Sampling (XeSS)"),
         };
 
@@ -143,8 +143,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
-            new GUIContent("FidelityFX Super Resolution 3 (FSR3)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
+            new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Deep Learning Super Sampling (DLSS)"),
         };
 
@@ -155,7 +155,7 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
             new GUIContent("Temporal Anti-aliasing (TAA)"),
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
         };
 
         static GUIContent[] s_AntialiasingFSR1FallBackMethodNames =

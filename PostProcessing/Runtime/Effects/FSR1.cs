@@ -65,10 +65,6 @@ namespace UnityEngine.Rendering.PostProcessing
         public Vector2Int renderSize;
         public Vector2Int displaySize;
 
-        //MAYBE
-        public Func<PostProcessRenderContext, IFsr3Callbacks> callbacksFactory { get; set; } = (context) => new Callbacks();
-        private IFsr3Callbacks _callbacks;
-
         private FSR.QualityMode _prevQualityMode;
         private Vector2Int _prevDisplaySize;
         private bool _prevSharpening;
@@ -150,8 +146,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
         public void Init()
         {
-            _callbacks = callbacksFactory(null);
-
             computeShaderEASU = (ComputeShader)Resources.Load("FSR1/EdgeAdaptiveScaleUpsampling");
             computeShaderRCAS = (ComputeShader)Resources.Load("FSR1/RobustContrastAdaptiveSharpen");
 
@@ -325,15 +319,6 @@ namespace UnityEngine.Rendering.PostProcessing
             else
             {
                 return 3;
-            }
-        }
-
-        private class Callbacks : Fsr3CallbacksBase
-        {
-            private readonly PostProcessResources _resources;
-
-            public Callbacks()
-            {
             }
         }
 #endif
