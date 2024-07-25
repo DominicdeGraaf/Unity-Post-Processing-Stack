@@ -38,11 +38,14 @@ namespace UnityEngine.Rendering.PostProcessing
         public Antialiasing fallBackAA = Antialiasing.None;
         [Range(0, 1)]
         public float antiGhosting = 0.0f;
-#if TND_FSR3 || AEG_FSR3
-        [Tooltip("Standard scaling ratio presets.")]
 
+        [Tooltip("Standard scaling ratio presets.")]
         [Header("FSR 3 Settings")]
         public Fsr3.QualityMode qualityMode = Fsr3.QualityMode.Quality;
+
+
+#if TND_FSR3 || AEG_FSR3
+
 
 
         [Tooltip("Apply RCAS sharpening to the image after upscaling.")]
