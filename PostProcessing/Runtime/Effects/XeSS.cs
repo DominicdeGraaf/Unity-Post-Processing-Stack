@@ -70,6 +70,7 @@ namespace UnityEngine.Rendering.PostProcessing
         private bool _supportedChecked = false;
         private bool _supported = false;
 
+
         private Material _sharpeningMaterial;
 
         private GraphicsDevice _graphicsDevice;
@@ -125,8 +126,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void ConfigureCameraViewport(PostProcessRenderContext context)
         {
-            var camera = context.camera;
-            _originalRect = camera.pixelRect;
+            var camera = context.camera; 
+            _originalRect = camera.rect;
 
             displaySize = new Vector2Int(context.width, context.height);
             if (displaySize != _prevDisplayResolution || qualityMode != _prevQuality)
@@ -167,7 +168,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
-            camera.pixelRect = new Rect(0, 0, renderSize.x, renderSize.y);
+            camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
         }
 
         internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
@@ -271,7 +272,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void ResetCameraViewport(PostProcessRenderContext context)
         {
-            context.camera.pixelRect = _originalRect;
+            context.camera.rect = _originalRect;
         }
 
         internal DepthTextureMode GetCameraFlags()

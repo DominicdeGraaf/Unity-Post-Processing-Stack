@@ -145,7 +145,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// XeSS upscaling & anti-aliasing settings for this camera.
         /// </summary>
         public XeSS xess;
-        public XeSS xessStereo;
+        //public XeSS xessStereo;
 
         /// <summary>
         /// Subpixel Morphological Anti-aliasing settings for this camera.
@@ -400,10 +400,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     xess.ResetCameraViewport(m_CurrentContext);
-                    if (m_CurrentContext.stereoActive)
-                    {
-                        xessStereo.ResetCameraViewport(m_CurrentContext);
-                    }
+                    //if (m_CurrentContext.stereoActive)
+                    //{
+                    //    xessStereo.ResetCameraViewport(m_CurrentContext);
+                    //}
                 }
 
 #endif
@@ -596,10 +596,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if (m_CurrentContext.IsXeSSActive())
             {
                 xess.Release();
-                if (xessStereo != null)
-                {
-                    xessStereo.Release();
-                }
+                //if (xessStereo != null)
+                //{
+                //    xessStereo.Release();
+                //}
             }
 #endif
 
@@ -772,6 +772,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         private bool _runRightEyeOnceCommandBuffers;
+        private bool _upscalerEnabled = false;
         void BuildCommandBuffers()
         {
             var context = m_CurrentContext;
@@ -797,6 +798,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.IsSGSRActive())
             {
 #if TND_SGSR
+                _upscalerEnabled = true;
                 if (!sgsr.IsSupported())
                 {
                     antialiasingMode = sgsr.fallBackAA;
@@ -814,6 +816,7 @@ namespace UnityEngine.Rendering.PostProcessing
             else if (context.IsFSR1Active())
             {
 #if TND_FSR1 || AEG_FSR1
+                _upscalerEnabled = true;
                 if (!fsr1.IsSupported())
                 {
                     antialiasingMode = fsr1.fallBackAA;
@@ -830,6 +833,7 @@ namespace UnityEngine.Rendering.PostProcessing
             else if (context.IsFSR3Active())
             {
 #if TND_FSR3 || AEG_FSR3
+                _upscalerEnabled = true;
                 if (!fsr3.IsSupported())
                 {
                     antialiasingMode = fsr3.fallBackAA;
@@ -853,6 +857,7 @@ namespace UnityEngine.Rendering.PostProcessing
             else if (context.IsDLSSActive())
             {
 #if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+                _upscalerEnabled = true;
                 if (!dlss.IsSupported())
                 {
                     antialiasingMode = dlss.fallBackAA;
@@ -876,6 +881,7 @@ namespace UnityEngine.Rendering.PostProcessing
             else if (context.IsXeSSActive())
             {
 #if TND_XeSS
+                _upscalerEnabled = true;
                 if (!xess.IsSupported())
                 {
                     xess.Release();
@@ -899,11 +905,15 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             else
             {
-                // Ensure all upscaler resources are released when it's not in use
-                if (context.camera.cameraType == CameraType.Game)
+                // Ensure all upscaler resources are released when it's not in use, and only call it when upscaler has been enabled once!
+                if (context.camera.cameraType == CameraType.Game && _upscalerEnabled)
                 {
+                    _upscalerEnabled = false;
 #if TND_FSR1 || AEG_FSR1
                     fsr1.Release();
+#endif
+#if TND_SGSR
+                    sgsr.Release();
 #endif
 #if TND_FSR3 || AEG_FSR3
                     fsr3.Release();
@@ -921,10 +931,10 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 #if TND_XeSS
                     xess.Release();
-                    if (xessStereo != null)
-                    {
-                        xessStereo.Release();
-                    }
+                    //if (xessStereo != null)
+                    //{
+                    //    xessStereo.Release();
+                    //}
 #endif
                 }
                 if (m_originalTargetTexture != null)
@@ -1199,10 +1209,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if (finalBlitToCameraTarget && m_CurrentContext.IsXeSSActive())
             {
                 xess.ResetCameraViewport(m_CurrentContext);
-                if (m_CurrentContext.stereoActive)
-                {
-                    xessStereo.ResetCameraViewport(m_CurrentContext);
-                }
+                //if (m_CurrentContext.stereoActive)
+                //{
+                //    xessStereo.ResetCameraViewport(m_CurrentContext);
+                //}
             }
 #endif
 
@@ -1684,7 +1694,7 @@ namespace UnityEngine.Rendering.PostProcessing
                         var finalDestination = context.destination;
                         //if (context.camera.stereoEnabled)
                         //{
-                            context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: true);
+                        context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: true);
                         //}
                         //else
                         //{
