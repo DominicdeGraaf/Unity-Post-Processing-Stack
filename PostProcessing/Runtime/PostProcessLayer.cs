@@ -1590,7 +1590,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 //TND Disabling MSAA because it breaks Unity's TAA
                 if (context.stereoActive)
                 {
-                    if (context.IsTemporalAntialiasingActive() || context.IsSGSRActive() || context.IsFSR1Active() || context.IsFSR1Active() || context.IsFSR3Active() || context.IsDLSSActive())
+                    if (context.IsTemporalAntialiasingActive() || context.IsSGSRActive() || context.IsFSR1Active() || context.IsFSR1Active() || context.IsFSR3Active() || context.IsDLSSActive() || context.IsXeSSActive())
                     {
                         QualitySettings.antiAliasing = 0;
                     }

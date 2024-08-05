@@ -104,17 +104,22 @@ namespace UnityEngine.Rendering.PostProcessing
             {
                 Release();
             }
+
+            camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
+
             if (context.camera.stereoEnabled)
             {
 #if UNITY_STANDALONE
-                camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
+                //camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
+                camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
 #else
                 ScalableBufferManager.ResizeBuffers(1 / _scaleFactor, 1 / _scaleFactor);
 #endif
             }
             else
             {
-                camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
+                //camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
+                camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
             }
         }
 

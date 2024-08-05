@@ -168,7 +168,9 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
-            camera.rect = new Rect(0, 0, renderSize.x, renderSize.y);
+            camera.aspect = (displaySize.x * _originalRect.width) / (displaySize.y * _originalRect.height);
+            camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
+
         }
 
         internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
@@ -228,7 +230,7 @@ namespace UnityEngine.Rendering.PostProcessing
             {
                 _motionVectorBuffer = Shader.GetGlobalTexture(_idMotionVectorTexture);
             }
-
+          
             if (_xessInput != null && _depthBuffer != null && _motionVectorBuffer != null)
             {
                 cmd.Blit(context.source, _xessInput);
