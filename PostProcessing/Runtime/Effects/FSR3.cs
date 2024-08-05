@@ -320,7 +320,7 @@ namespace UnityEngine.Rendering.PostProcessing
             _prevExposureSource = exposureSource;
             _prevDisplaySize = _displaySize;
 
-            enableFP16 = SystemInfo.IsFormatSupported(UnityEngine.Experimental.Rendering.GraphicsFormat.R16_SFloat, UnityEngine.Experimental.Rendering.FormatUsage.Render);
+            enableFP16 = false; //SystemInfo.IsFormatSupported(UnityEngine.Experimental.Rendering.GraphicsFormat.R16_SFloat, UnityEngine.Experimental.Rendering.FormatUsage.Render);//Breaks FSR 3.1, so we disabled it for now!
 
             // Initialize FSR3 context
             Fsr3.InitializationFlags flags = 0;
