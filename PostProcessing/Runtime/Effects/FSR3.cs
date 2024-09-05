@@ -24,7 +24,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
-#if TND_FSR3 || AEG_FSR3
+
+#if TND_FSR3
+using TND.FSR;
 using FidelityFX;
 #endif
 
@@ -39,11 +41,11 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(0, 1)]
         public float antiGhosting = 0.0f;
 
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
 
         [Tooltip("Standard scaling ratio presets.")]
         [Header("FSR 3 Settings")]
-        public Fsr3.QualityMode qualityMode = Fsr3.QualityMode.Quality;
+        public FSR3_Quality qualityMode = FSR3_Quality.Quality;
 
         [Tooltip("Apply RCAS sharpening to the image after upscaling.")]
         public bool Sharpening = true;
@@ -128,7 +130,7 @@ namespace UnityEngine.Rendering.PostProcessing
         private readonly Fsr3.DispatchDescription _dispatchDescription = new Fsr3.DispatchDescription();
         private readonly Fsr3.GenerateReactiveDescription _genReactiveDescription = new Fsr3.GenerateReactiveDescription();
 
-        private Fsr3.QualityMode _prevQualityMode;
+        private FSR3_Quality _prevQualityMode;
         private ExposureSource _prevExposureSource;
         private Vector2Int _prevDisplaySize;
 
@@ -173,7 +175,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         public void OnResetAllMipMaps()
         {
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
         public bool IsSupported()
@@ -193,7 +195,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
         {
-            if (qualityMode == Fsr3.QualityMode.Off)
+            if (qualityMode == FSR3_Quality.Off)
             {
                 Release();
                 return;
@@ -216,7 +218,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Determine the desired rendering and display resolutions
             _displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
-            Fsr3.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, qualityMode);
+
+            Fsr3.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, (Fsr3.QualityMode)((int)qualityMode - 1));
             _maxRenderSize = new Vector2Int(maxRenderWidth, maxRenderHeight);
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
@@ -241,7 +244,7 @@ namespace UnityEngine.Rendering.PostProcessing
             _displaySize = new Vector2Int(context.superResolution3._displaySize.x, context.superResolution3._displaySize.y);
 
             qualityMode = context.superResolution3.qualityMode;
-            Fsr3.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, qualityMode);
+            Fsr3.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, (Fsr3.QualityMode)((int)qualityMode - 1));
             _maxRenderSize = new Vector2Int(maxRenderWidth, maxRenderHeight);
 
             // Render to a smaller portion of the screen by manipulating the camera's viewport rect
@@ -257,13 +260,11 @@ namespace UnityEngine.Rendering.PostProcessing
         internal void Render(PostProcessRenderContext context, bool _stereoRendering = false)
         {
             var cmd = context.command;
-            if (qualityMode == Fsr3.QualityMode.Off)
+            if (qualityMode == FSR3_Quality.Off)
             {
                 cmd.Blit(context.source, context.destination);
                 return;
             }
-
-        
 
             if (_stereoRendering)
             {
@@ -274,6 +275,7 @@ namespace UnityEngine.Rendering.PostProcessing
             {
                 cmd.BeginSample("FSR3");
             }
+
             if (autoTextureUpdate && !isStereoRendering)
             {
                 MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
@@ -316,6 +318,12 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private void CreateFsrContext(PostProcessRenderContext context)
         {
+            if (context.camera.GetComponent<FSR3_BASE>() != null)
+            {
+                context.camera.GetComponent<FSR3_BASE>().enabled = false;
+                Debug.LogWarning("[FSR 3] Don't use the FSR3_BIRP and Custom Post Processing stack at the same time!");
+            }
+
             _prevQualityMode = qualityMode;
             _prevExposureSource = exposureSource;
             _prevDisplaySize = _displaySize;
@@ -350,7 +358,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 _fsrContext = null;
             }
 
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
         private void ApplyJitter(Camera camera, PostProcessRenderContext context)
@@ -427,7 +435,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // Set up the main FSR3 dispatch parameters
             // The input textures are left blank here, as they get bound directly through SetGlobalTexture elsewhere in this source file
             _dispatchDescription.Color = new ResourceView(context.source, RenderTextureSubElement.Color);
-            _dispatchDescription.Depth = new ResourceView(BuiltinRenderTextureType.CameraTarget, RenderTextureSubElement.Depth);
+            _dispatchDescription.Depth = new ResourceView(GetDepthTexture(context.camera), RenderTextureSubElement.Depth);
             _dispatchDescription.MotionVectors = new ResourceView(BuiltinRenderTextureType.MotionVectors);
 
             _dispatchDescription.Exposure = ResourceView.Unassigned;
@@ -515,7 +523,7 @@ namespace UnityEngine.Rendering.PostProcessing
         private void SetupAutoReactiveDescription(PostProcessRenderContext context)
         {
             // Set up the parameters to auto-generate a reactive mask
-           _genReactiveDescription.ColorOpaqueOnly = new ResourceView(colorOpaqueOnly);
+            _genReactiveDescription.ColorOpaqueOnly = new ResourceView(colorOpaqueOnly);
             _genReactiveDescription.ColorPreUpscale = new ResourceView(context.source);
             _genReactiveDescription.OutReactive = new ResourceView(Fsr3ShaderIDs.UavAutoReactive);
             _genReactiveDescription.RenderSize = GetScaledRenderSize(context.camera);
@@ -534,6 +542,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 _genReactiveDescription.BinaryValue = context.superResolution3.ReactiveBinaryValue;
                 _genReactiveDescription.Flags = context.superResolution3.flags;
             }
+        }
+
+        private static BuiltinRenderTextureType GetDepthTexture(Camera cam)
+        {
+            RenderingPath renderingPath = cam.renderingPath;
+            return renderingPath == RenderingPath.Forward || renderingPath == RenderingPath.VertexLit ? BuiltinRenderTextureType.Depth : BuiltinRenderTextureType.CameraTarget;
         }
 
         internal Vector2Int GetScaledRenderSize(Camera camera)

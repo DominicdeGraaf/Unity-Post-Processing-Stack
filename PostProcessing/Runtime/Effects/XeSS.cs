@@ -4,7 +4,7 @@ using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 #if TND_XeSS
 using TND.XeSS;
 #else
-public enum XeSSQuality
+public enum XeSS_Quality
 {
     Off,
     NativeAntiAliasing,
@@ -25,7 +25,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public Antialiasing fallBackAA = Antialiasing.None;
 #if TND_XeSS
         [Header("XeSS Settings")]
-        public XeSSQuality qualityMode;
+        public XeSS_Quality qualityMode = XeSS_Quality.Quality;
         [Range(0, 1)]
         public float antiGhosting;
         public bool sharpening = true;
@@ -43,7 +43,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         public float jitterX, jitterY;
 
-        private XeSSQuality _prevQuality = XeSSQuality.Off;
+        private XeSS_Quality _prevQuality = XeSS_Quality.Off;
         private IntelQuality _intelQuality;
         private Vector2Int _prevDisplayResolution;
 
@@ -121,7 +121,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         public void OnResetAllMipMaps()
         {
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
         internal void ConfigureCameraViewport(PostProcessRenderContext context)
@@ -142,7 +142,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 renderSize = new Vector2Int((int)(displaySize.x / _scaleFactor), (int)(displaySize.y / _scaleFactor));
 
-                if (qualityMode == XeSSQuality.Off)
+                if (qualityMode == XeSS_Quality.Off)
                 {
                     ReleaseResources();
                     return;
@@ -175,7 +175,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
         {
-            if (qualityMode == XeSSQuality.Off)
+            if (qualityMode == XeSS_Quality.Off)
             {
                 return;
             }
@@ -191,7 +191,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             var cmd = context.command;
 
-            if (qualityMode == XeSSQuality.Off)
+            if (qualityMode == XeSS_Quality.Off)
             {
                 cmd.Blit(context.source, context.destination);
                 return;

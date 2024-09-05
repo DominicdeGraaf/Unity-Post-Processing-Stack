@@ -55,10 +55,11 @@ public static class MipMapUtils
     /// <summary>
     /// Resets all currently loaded textures to the default mipmap bias. 
     /// </summary>
-    public static void OnResetAllMipMaps()
+    public static void OnResetAllMipMaps(ref float prevMipMapBias)
     {
         if (!_IsReset)
         {
+            prevMipMapBias = Mathf.Infinity;
             _IsReset = true;
             Texture[] m_allTextures = Resources.FindObjectsOfTypeAll(typeof(Texture)) as Texture[];
             for (int i = 0; i < m_allTextures.Length; i++)
@@ -66,11 +67,11 @@ public static class MipMapUtils
                 m_allTextures[i].mipMapBias = 0;
             }
         }
-
     }
 
     public static void AutoUpdateMipMaps(float renderWidth, float displayWidth, float mipMapBiasOverride, float updateFrequency, ref float prevMipMapBias, ref float mipMapTimer, ref ulong previousLength)
     {
+    
         mipMapTimer += Time.deltaTime;
         _IsReset = false;
         if (mipMapTimer > updateFrequency)
@@ -78,7 +79,8 @@ public static class MipMapUtils
             mipMapTimer = 0;
 
             float mipMapBias = CalculateMipMapBias(renderWidth, displayWidth, mipMapBiasOverride);
-            if(previousLength != Texture.currentTextureMemory || prevMipMapBias != mipMapBias)
+        
+            if (previousLength != Texture.currentTextureMemory || prevMipMapBias != mipMapBias)
             {
                 prevMipMapBias = mipMapBias;
                 previousLength = Texture.currentTextureMemory;

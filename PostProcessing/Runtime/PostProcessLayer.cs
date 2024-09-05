@@ -365,14 +365,14 @@ namespace UnityEngine.Rendering.PostProcessing
                     sgsr.ResetCameraViewport(m_CurrentContext);
                 }
 #endif
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
                 if (m_CurrentContext.IsFSR1Active())
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
                     fsr1.ResetCameraViewport(m_CurrentContext);
                 }
 #endif
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
                 if (m_CurrentContext.IsFSR3Active())
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
@@ -384,7 +384,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
 
 #endif
-#if(TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 if (m_CurrentContext.IsDLSSActive())
                 {
                     // Set the camera back to its original parameters, so we can output at full display resolution
@@ -558,7 +558,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             temporalAntialiasing.Release();
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
             if (m_CurrentContext.IsFSR1Active())
             {
                 fsr1.Release();
@@ -570,7 +570,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 sgsr.Release();
             }
 #endif
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
             if (m_CurrentContext.IsFSR3Active())
             {
                 fsr3.Release();
@@ -582,7 +582,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
 #endif
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
             if (m_CurrentContext.IsDLSSActive())
             {
                 dlss.Release();
@@ -815,7 +815,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             else if (context.IsFSR1Active())
             {
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
                 _upscalerEnabled = true;
                 if (!fsr1.IsSupported())
                 {
@@ -832,7 +832,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             else if (context.IsFSR3Active())
             {
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
                 _upscalerEnabled = true;
                 if (!fsr3.IsSupported())
                 {
@@ -856,7 +856,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             else if (context.IsDLSSActive())
             {
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                 _upscalerEnabled = true;
                 if (!dlss.IsSupported())
                 {
@@ -909,20 +909,20 @@ namespace UnityEngine.Rendering.PostProcessing
                 if (context.camera.cameraType == CameraType.Game && _upscalerEnabled)
                 {
                     _upscalerEnabled = false;
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
                     fsr1.Release();
 #endif
 #if TND_SGSR
                     sgsr.Release();
 #endif
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
                     fsr3.Release();
                     if (fsr3Stereo != null)
                     {
                         fsr3Stereo.Release();
                     }
 #endif
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                     dlss.Release();
                     if (dlssStereo != null)
                     {
@@ -1034,7 +1034,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.ReleaseTemporaryRT(srcTarget);
             }
 
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
             //TND Only run the right eye once, otherwise we'll get a free memory leak
             if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
             {
@@ -1093,7 +1093,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = m_upscaledOutput;
             }
 #endif
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
             if (!finalBlitToCameraTarget && m_CurrentContext.IsFSR1Active())
             {
                 var displaySize = fsr1.displaySize;
@@ -1104,7 +1104,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = m_upscaledOutput;
             }
 #endif
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
             if (!finalBlitToCameraTarget && m_CurrentContext.IsFSR3Active())
             {
                 var displaySize = fsr3.displaySize;
@@ -1115,7 +1115,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = m_upscaledOutput;
             }
 #endif
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
             if (!finalBlitToCameraTarget && m_CurrentContext.IsDLSSActive())
             {
                 var displaySize = dlss.displaySize;
@@ -1175,14 +1175,14 @@ namespace UnityEngine.Rendering.PostProcessing
                 sgsr.ResetCameraViewport(m_CurrentContext);
             }
 #endif
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
             // Set the camera back to its original parameters, so we can output at full display resolution
             if (finalBlitToCameraTarget && m_CurrentContext.IsFSR1Active())
             {
                 fsr1.ResetCameraViewport(m_CurrentContext);
             }
 #endif
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
             // Set the camera back to its original parameters, so we can output at full display resolution
             if (finalBlitToCameraTarget && m_CurrentContext.IsFSR3Active())
             {
@@ -1193,7 +1193,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
             }
 #endif
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
             // Set the camera back to its original parameters, so we can output at full display resolution
             if (finalBlitToCameraTarget && m_CurrentContext.IsDLSSActive())
             {
@@ -1335,11 +1335,11 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.IsTemporalAntialiasingActive())
                 flags |= temporalAntialiasing.GetCameraFlags();
 
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
             if (context.IsFSR3Active())
                 flags |= fsr3.GetCameraFlags();
 #endif
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
             if (context.IsDLSSActive())
                 flags |= dlss.GetCameraFlags();
 #endif
@@ -1368,7 +1368,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 bundle.Value.ResetHistory();
 
             temporalAntialiasing.ResetHistory();
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
             fsr3.OnResetCamera();
             if (fsr3Stereo != null)
             {
@@ -1609,39 +1609,56 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 if (context.IsTemporalAntialiasingActive() || context.IsSGSRActive() || context.IsFSR1Active())
                 {
-                    // Do temporal anti-aliasing first
-                    if (!RuntimeUtilities.scriptableRenderPipelineActive)
+                    bool _runTAA = true;
+#if TND_SGSR
+                    if (context.IsSGSRActive())
                     {
-                        if (context.stereoActive)
+                        _runTAA = context.sgsr.UnityTAAEnabled;
+                    }
+#endif
+#if TND_FSR1
+                    if (context.IsFSR1Active())
+                    {
+                        _runTAA = context.superResolution1.UnityTAAEnabled;
+                    }
+#endif
+
+                    // Do temporal anti-aliasing first
+                    if (_runTAA)
+                    {
+                        if (!RuntimeUtilities.scriptableRenderPipelineActive)
                         {
-                            // We only need to configure all of this once for stereo, during OnPreCull
-                            if (context.camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
-                                temporalAntialiasing.ConfigureStereoJitteredProjectionMatrices(context);
+                            if (context.stereoActive)
+                            {
+                                // We only need to configure all of this once for stereo, during OnPreCull
+                                if (context.camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
+                                    temporalAntialiasing.ConfigureStereoJitteredProjectionMatrices(context);
+                            }
+                            else
+                            {
+                                temporalAntialiasing.ConfigureJitteredProjectionMatrix(context);
+                            }
                         }
-                        else
-                        {
-                            temporalAntialiasing.ConfigureJitteredProjectionMatrix(context);
-                        }
+                        var taaTarget = m_TargetPool.Get();
+                        var finalDestination = context.destination;
+                        context.GetScreenSpaceTemporaryRT(cmd, taaTarget, 0, context.sourceFormat);
+                        context.destination = taaTarget;
+                        temporalAntialiasing.Render(context);
+                        context.source = taaTarget;
+                        context.destination = finalDestination;
+
+                        if (lastTarget > -1)
+                            cmd.ReleaseTemporaryRT(lastTarget);
+
+                        lastTarget = taaTarget;
                     }
 
-                    var taaTarget = m_TargetPool.Get();
-                    var finalDestination = context.destination;
-                    context.GetScreenSpaceTemporaryRT(cmd, taaTarget, 0, context.sourceFormat);
-                    context.destination = taaTarget;
-                    temporalAntialiasing.Render(context);
-                    context.source = taaTarget;
-                    context.destination = finalDestination;
-
-                    if (lastTarget > -1)
-                        cmd.ReleaseTemporaryRT(lastTarget);
-
-                    lastTarget = taaTarget;
                     if (context.IsSGSRActive())
                     {
 #if TND_SGSR
                         context.SetRenderSize(sgsr.displaySize);
                         var sgsrTarget = m_TargetPool.Get();
-                        finalDestination = context.destination;
+                        var finalDestination = context.destination;
                         context.GetScreenSpaceTemporaryRT(cmd, sgsrTarget, 0, context.sourceFormat, isUpscaleOutput: true);
                         context.destination = sgsrTarget;
                         sgsr.Render(context);
@@ -1659,11 +1676,11 @@ namespace UnityEngine.Rendering.PostProcessing
                     }
                     else if (context.IsFSR1Active())
                     {
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
                         // Set the upscaler's output to full display resolution, as well as for all following post-processing effects
                         context.SetRenderSize(fsr1.displaySize);
                         var fsrTarget = m_TargetPool.Get();
-                        finalDestination = context.destination;
+                        var finalDestination = context.destination;
                         context.GetScreenSpaceTemporaryRT(cmd, fsrTarget, 0, context.sourceFormat, isUpscaleOutput: true);
                         context.destination = fsrTarget;
                         fsr1.Render(context);
@@ -1682,7 +1699,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
                 else if (context.IsFSR3Active())
                 {
-#if TND_FSR3 || AEG_FSR3
+#if TND_FSR3
                     if (!context.stereoActive || context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
                     {
                         fsr3.ConfigureJitteredProjectionMatrix(context);
@@ -1740,7 +1757,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
                 else if (context.IsDLSSActive())
                 {
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
+#if TND_DLSS && UNITY_STANDALONE_WIN && UNITY_64
                     if (!context.stereoActive || context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
                     {
                         dlss.ConfigureJitteredProjectionMatrix(context);

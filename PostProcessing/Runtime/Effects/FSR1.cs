@@ -1,7 +1,7 @@
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 using System;
 
-#if TND_FSR1 && TND_FSR3 || AEG_FSR1 && AEG_FSR3
+#if TND_FSR1 && TND_FSR3
 using FidelityFX;
 #endif
 
@@ -9,19 +9,18 @@ using FidelityFX;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if TND_FSR1 || AEG_FSR1
-    namespace FSR
+#if TND_FSR1
+
+    public enum FSR1_Quality
     {
-        public enum QualityMode
-        {
-            Off,
-            Native,
-            Quality,
-            Balanced,
-            Performance,
-            UltraPerformance
-        }
+        Off,
+        Native,
+        Quality,
+        Balanced,
+        Performance,
+        UltraPerformance
     }
+
 #endif
 
     [UnityEngine.Scripting.Preserve]
@@ -30,17 +29,19 @@ namespace UnityEngine.Rendering.PostProcessing
     {
         [Tooltip("Fallback AA for when FSR 3 is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
+        public bool UnityTAAEnabled = true;
 
-#if TND_FSR1 || AEG_FSR1
+#if TND_FSR1
 
         [Header("FSR Compute Shaders")]
         public ComputeShader computeShaderEASU;
         public ComputeShader computeShaderRCAS;
 
         [Header("FSR 1 Settings")]
-        public FSR.QualityMode qualityMode = FSR.QualityMode.Quality;
+        public FSR1_Quality qualityMode = FSR1_Quality.Quality;
         public float scaleFactor = new FloatParameter { value = 1.3f };
         public bool Sharpening = new BoolParameter { value = true };
+      
 
         [Range(0f, 1f), Tooltip("0 = sharpest, 2 = less sharp")]
         public float sharpness = new FloatParameter { value = 0.2f };
@@ -65,7 +66,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public Vector2Int renderSize;
         public Vector2Int displaySize;
 
-        private FSR.QualityMode _prevQualityMode;
+        private FSR1_Quality _prevQualityMode;
         private Vector2Int _prevDisplaySize;
         private bool _prevSharpening;
 
@@ -105,7 +106,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         public void OnResetAllMipMaps()
         {
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
         public bool IsSupported()
@@ -141,7 +142,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 RCASParametersCB = null;
             }
 
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
         public void Init()
@@ -164,7 +165,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // Determine the desired rendering and display resolutions
             displaySize = new Vector2Int(camera.pixelWidth, camera.pixelHeight);
             renderSize = new Vector2Int((int)(displaySize.x / scaleFactor), (int)(displaySize.y / scaleFactor));
-            if (qualityMode == FSR.QualityMode.Off)
+            if (qualityMode == FSR1_Quality.Off)
             {
                 Release();
             }
@@ -209,7 +210,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             //FSR1
             var cmd = context.command;
-            if (qualityMode == FSR.QualityMode.Off)
+            if (qualityMode == FSR1_Quality.Off)
             {
                 scaleFactor = GetScaling();
                 cmd.Blit(context.source, context.destination);
@@ -300,23 +301,23 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private float GetScaling()
         {
-            if (qualityMode == FSR.QualityMode.Off)
+            if (qualityMode == FSR1_Quality.Off)
             {
                 return 1.0f;
             }
-            else if (qualityMode == FSR.QualityMode.Native)
+            else if (qualityMode == FSR1_Quality.Native)
             {
                 return 1.0f;
             }
-            else if (qualityMode == FSR.QualityMode.Quality)
+            else if (qualityMode == FSR1_Quality.Quality)
             {
                 return 1.5f;
             }
-            else if (qualityMode == FSR.QualityMode.Balanced)
+            else if (qualityMode == FSR1_Quality.Balanced)
             {
                 return 1.7f;
             }
-            else if (qualityMode == FSR.QualityMode.Performance)
+            else if (qualityMode == FSR1_Quality.Performance)
             {
                 return 2.0f;
             }

@@ -1,30 +1,17 @@
 using System;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
 
-#if (TND_DLSS || AEG_DLSS) && UNITY_STANDALONE_WIN && UNITY_64
-#if (TND_DLSS) 
+
+#if TND_DLSS
 using TND.DLSS;
-#else
-using AEG.DLSS;
 #endif
 
+#if UNITY_STANDALONE_WIN && UNITY_64
 
-#if (TND_DLSS) 
+#if TND_DLSS
 using static TND.DLSS.DLSS_UTILS;
-#else
-using static AEG.DLSS.DLSS_UTILS;
 #endif
 
-#else
-public enum DLSS_Quality
-{
-    Off,
-    DLAA,
-    MaximumQuality,
-    Balanced,
-    MaximumPerformance,
-    UltraPerformance,
-}
 #endif
 
 namespace UnityEngine.Rendering.PostProcessing
@@ -33,15 +20,17 @@ namespace UnityEngine.Rendering.PostProcessing
     [Serializable]
     public class DLSS
     {
-        public Antialiasing fallBackAA = Antialiasing.None;
+ 
         public Vector2 jitter
         {
             get; private set;
         }
 
-        public bool IsSupported() {
-#if (TND_DLSS || AEG_DLSS)  && UNITY_STANDALONE_WIN && UNITY_64
-            if(device == null) {
+        public bool IsSupported()
+        {
+#if (TND_DLSS)  && UNITY_STANDALONE_WIN && UNITY_64
+            if (device == null)
+            {
                 return false;
             }
             return device.IsFeatureAvailable(NVIDIA.GraphicsDeviceFeature.DLSS);
@@ -50,11 +39,15 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
         }
 
+        public Antialiasing fallBackAA = Antialiasing.None;
+
+#if TND_DLSS
         [Header("DLSS Settings")]
-        public DLSS_Quality qualityMode = DLSS_Quality.MaximumQuality;
+        public DLSS_Quality qualityMode = DLSS_Quality.Balanced;
 
         [Tooltip("Apply sharpening to the image during upscaling.")]
         public bool Sharpening = true;
+
         [Tooltip("Strength of the sharpening effect.")]
         [Range(0, 1)] public float sharpness = 0.5f;
 
@@ -67,7 +60,7 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(0, 1)]
         public float mipMapBiasOverride = 1f;
 
-#if TND_DLSS || AEG_DLSS
+
 #if UNITY_STANDALONE_WIN && UNITY_64
 
 
@@ -103,7 +96,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates a single texture to the set MipMap Bias.
         /// Should be called when an object is instantiated, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipmapSingleTexture(Texture texture) {
+        public void OnMipmapSingleTexture(Texture texture)
+        {
             MipMapUtils.OnMipMapSingleTexture(texture, renderSize.x, displaySize.x, mipMapBiasOverride);
         }
 
@@ -111,24 +105,30 @@ namespace UnityEngine.Rendering.PostProcessing
         /// Updates all textures currently loaded to the set MipMap Bias.
         /// Should be called when a lot of new textures are loaded, or when the ScaleFactor is changed.
         /// </summary>
-        public void OnMipMapAllTextures() {
+        public void OnMipMapAllTextures()
+        {
             MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
 
         /// <summary>
         /// Resets all currently loaded textures to the default mipmap bias. 
         /// </summary>
-        public void OnResetAllMipMaps() {
-            MipMapUtils.OnResetAllMipMaps();
+        public void OnResetAllMipMaps()
+        {
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
-        internal DepthTextureMode GetCameraFlags() {
+        internal DepthTextureMode GetCameraFlags()
+        {
             return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
         }
 
-        internal void Release() {
-            if(state != null) {
-                if(cmd != null) {
+        internal void Release()
+        {
+            if (state != null)
+            {
+                if (cmd != null)
+                {
                     state.Cleanup(cmd);
                 }
 
@@ -137,8 +137,9 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context) {
-            if(qualityMode == DLSS_Quality.Off)
+        internal void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
+        {
+            if (qualityMode == DLSS_Quality.Off)
             {
                 Release();
                 return;
@@ -146,7 +147,8 @@ namespace UnityEngine.Rendering.PostProcessing
             ApplyJitter(context.camera, context);
         }
 
-        internal void ConfigureCameraViewport(PostProcessRenderContext context) {
+        internal void ConfigureCameraViewport(PostProcessRenderContext context)
+        {
             if (context.camera.stereoEnabled)
             {
                 if (context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
@@ -193,7 +195,8 @@ namespace UnityEngine.Rendering.PostProcessing
             camera.rect = new Rect(0, 0, _originalRect.width * renderSize.x / displaySize.x, _originalRect.height * renderSize.y / displaySize.y);
         }
 
-        internal void ResetCameraViewport(PostProcessRenderContext context) {
+        internal void ResetCameraViewport(PostProcessRenderContext context)
+        {
             context.camera.rect = _originalRect;
         }
 
@@ -202,7 +205,8 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             get
             {
-                if(_device == null) {
+                if (_device == null)
+                {
                     SetupDevice();
                 }
 
@@ -210,11 +214,12 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        protected void SetupDevice() {
-            if(!NVIDIA.NVUnityPlugin.IsLoaded())
+        protected void SetupDevice()
+        {
+            if (!NVIDIA.NVUnityPlugin.IsLoaded())
                 return;
 
-            if(!SystemInfo.graphicsDeviceVendor.ToLower().Contains("nvidia"))
+            if (!SystemInfo.graphicsDeviceVendor.ToLower().Contains("nvidia"))
                 return;
 
 
@@ -222,10 +227,12 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         CommandBuffer cmd;
-        internal void Render(PostProcessRenderContext context, bool _stereoRendering = false) {
+        internal void Render(PostProcessRenderContext context, bool _stereoRendering = false)
+        {
 
             cmd = context.command;
-            if(qualityMode == DLSS_Quality.Off) {
+            if (qualityMode == DLSS_Quality.Off)
+            {
                 cmd.Blit(context.source, context.destination);
                 return;
             }
@@ -240,7 +247,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.BeginSample("DLSS");
             }
 
-            if (state == null) {
+            if (state == null)
+            {
                 state = new ViewState(device);
             }
 
@@ -257,10 +265,12 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Monitor for any resolution changes and recreate the DLSS context if necessary
             // We can't create an DLSS context without info from the post-processing context, so delay the initial setup until here
-            if (displaySize.x != _prevDisplaySize.x || displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode) {
+            if (displaySize.x != _prevDisplaySize.x || displaySize.y != _prevDisplaySize.y || qualityMode != _prevQualityMode)
+            {
                 _mipMapTimer = Mathf.Infinity;
 
-                if(m_dlssOutput != null) {
+                if (m_dlssOutput != null)
+                {
                     m_dlssOutput.Release();
                     m_dlssInput.Release();
                 }
@@ -271,7 +281,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_renderWidth = (int)(displaySize.x / _upscaleRatio);
                 m_renderHeight = (int)(displaySize.y / _upscaleRatio);
 
-#if(TND_DLSS)
+#if (TND_DLSS)
                 dlssData.inputRes = new TND.DLSS.DLSS_UTILS.Resolution() { width = m_renderWidth, height = m_renderHeight };
                 dlssData.outputRes = new TND.DLSS.DLSS_UTILS.Resolution() { width = displaySize.x, height = displaySize.y };
 #else
@@ -296,20 +306,25 @@ namespace UnityEngine.Rendering.PostProcessing
                 MipMapUtils.AutoUpdateMipMaps(renderSize.x, displaySize.x, mipMapBiasOverride, updateFrequency, ref _prevMipMapBias, ref _mipMapTimer, ref _previousLength);
             }
 
-            if (m_depthBuffer == null) {
+            if (m_depthBuffer == null)
+            {
                 m_depthBuffer = Shader.GetGlobalTexture(m_cameraDepthTextureID);
             }
-            if(m_motionVectorBuffer == null) {
+            if (m_motionVectorBuffer == null)
+            {
                 m_motionVectorBuffer = Shader.GetGlobalTexture(m_cameraMotionVectorsTextureID);
             }
 
-            if(m_dlssInput != null && m_depthBuffer != null && m_motionVectorBuffer != null) {
+            if (m_dlssInput != null && m_depthBuffer != null && m_motionVectorBuffer != null)
+            {
                 cmd.Blit(context.source, m_dlssInput);
                 UpdateDlssSettings(ref dlssData, state, qualityMode, device);
                 state.CreateContext(dlssData, cmd);
                 state.UpdateDispatch(m_dlssInput, m_depthBuffer, m_motionVectorBuffer, null, m_dlssOutput, cmd);
                 cmd.Blit(m_dlssOutput, context.destination);
-            } else {
+            }
+            else
+            {
                 cmd.Blit(context.source, context.destination);
             }
 
@@ -323,12 +338,13 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        private void ApplyJitter(Camera camera, PostProcessRenderContext context) {
+        private void ApplyJitter(Camera camera, PostProcessRenderContext context)
+        {
 
-            if(camera.stereoEnabled)
+            if (camera.stereoEnabled)
             {
                 // We only need to configure all of this once for stereo, during OnPreCull
-                if(camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
+                if (camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
                     ConfigureStereoJitteredProjectionMatrices(context, camera);
             }
             else
@@ -346,7 +362,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var m_projectionMatrix = camera.projectionMatrix;
             var scaledRenderSize = GetScaledRenderSize(camera);
             var m_jitterMatrix = GetJitteredProjectionMatrix(m_projectionMatrix, scaledRenderSize.x, scaledRenderSize.y, antiGhosting, camera);
-   
+
             camera.nonJitteredProjectionMatrix = m_projectionMatrix;
             camera.projectionMatrix = m_jitterMatrix;
             camera.useJitteredProjectionMatrixForTransparentRendering = true;
@@ -360,7 +376,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public void ConfigureStereoJitteredProjectionMatrices(PostProcessRenderContext context, Camera camera)
         {
 #if UNITY_2017_3_OR_NEWER
-            for(var eye = Camera.StereoscopicEye.Left; eye <= Camera.StereoscopicEye.Right; eye++)
+            for (var eye = Camera.StereoscopicEye.Left; eye <= Camera.StereoscopicEye.Right; eye++)
             {
                 // This saves off the device generated projection matrices as non-jittered
                 camera.CopyStereoDeviceProjectionMatrixToNonJittered(eye);
@@ -379,8 +395,9 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
         }
 
-        private Vector2Int GetScaledRenderSize(Camera camera) {
-            if(!RuntimeUtilities.IsDynamicResolutionEnabled(camera))
+        private Vector2Int GetScaledRenderSize(Camera camera)
+        {
+            if (!RuntimeUtilities.IsDynamicResolutionEnabled(camera))
                 return renderSize;
 
             return new Vector2Int(Mathf.CeilToInt(renderSize.x * ScalableBufferManager.widthScaleFactor), Mathf.CeilToInt(renderSize.y * ScalableBufferManager.heightScaleFactor));

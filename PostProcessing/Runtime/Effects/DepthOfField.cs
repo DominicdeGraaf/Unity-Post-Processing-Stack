@@ -201,7 +201,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
             } else if (context.IsDLSSActive())
             {
-#if TND_DLSS || AEG_DLSS
+#if TND_DLSS
                 var jitter = context.deepLearningSuperSampling.jitter;
                 sheet.properties.SetVector(ShaderIDs.TaaParams, new Vector3(jitter.x, jitter.y, m_ResetHistory ? 0f : 0.85f));
 #endif

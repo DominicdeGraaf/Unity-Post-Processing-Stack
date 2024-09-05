@@ -1,43 +1,22 @@
 using System;
 using System.Collections.Generic;
 using static UnityEngine.Rendering.PostProcessing.PostProcessLayer;
-
 #if TND_SGSR
 using TND.SGSR;
-#else
-public enum SGSR_Quality
-{
-    Off,
-    Native,
-    Quality,
-    Balanced,
-    Performance,
-    UltraPerformance,
-}
 #endif
-
 namespace UnityEngine.Rendering.PostProcessing
 {
     [Scripting.Preserve]
     [Serializable]
     public class SGSR
     {
-        public enum SGSR_Quality
-        {
-            Off,
-            Native,
-            Quality,
-            Balanced,
-            Performance,
-            UltraPerformance,
-        }
-
         [Tooltip("Fallback AA for when SGSR is not supported")]
         public Antialiasing fallBackAA = Antialiasing.None;
+        public bool UnityTAAEnabled = true;
 
 #if TND_SGSR
         [Header("SGSR Settings")]
-        public SGSR_Quality qualityMode = SGSR_Quality.Performance;
+        public SGSR_Quality qualityMode = SGSR_Quality.Quality;
         [Range(0f, 5.0f)]
         public float edgeSharpness = new FloatParameter { value = 2.0f };
 
@@ -84,11 +63,11 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         public void OnResetAllMipMaps()
         {
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
         public void Release()
         {
-            MipMapUtils.OnResetAllMipMaps();
+            MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
         public void ConfigureCameraViewport(PostProcessRenderContext context)
@@ -141,8 +120,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void Render(PostProcessRenderContext context)
         {
-
-
             var cmd = context.command;
             if (qualityMode == SGSR_Quality.Off)
             {
@@ -173,8 +150,10 @@ namespace UnityEngine.Rendering.PostProcessing
             {
                 case SGSR_Quality.Off:
                     return 1.0f;
-                case SGSR_Quality.Native:
+                case SGSR_Quality.NativeAA:
                     return 1.0f;
+                case SGSR_Quality.UltraQuality:
+                    return 1.2f;
                 case SGSR_Quality.Quality:
                     return 1.5f;
                 case SGSR_Quality.Balanced:
