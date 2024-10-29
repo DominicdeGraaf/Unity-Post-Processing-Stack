@@ -401,7 +401,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var m_projectionMatrix = camera.projectionMatrix;
             camera.nonJitteredProjectionMatrix = m_projectionMatrix;
             camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
-            camera.useJitteredProjectionMatrixForTransparentRendering = false;
+            camera.useJitteredProjectionMatrixForTransparentRendering = true;
         }
 
         /// <summary>
@@ -425,7 +425,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // jitter has to be scaled for the actual eye texture size, not just the intermediate texture size
             // which could be double-wide in certain stereo rendering scenarios
             jitter = new Vector2(jitter.x / context.screenWidth, jitter.y / context.screenHeight);
-            camera.useJitteredProjectionMatrixForTransparentRendering = false;
+            camera.useJitteredProjectionMatrixForTransparentRendering = true;
         }
 
         private void SetupDispatchDescription(PostProcessRenderContext context)

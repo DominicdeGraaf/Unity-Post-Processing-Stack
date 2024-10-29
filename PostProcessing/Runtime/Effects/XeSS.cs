@@ -212,7 +212,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     resolution = displaySize,
                     qualitySetting = GraphicsDevice.QualityModeToInitSetting(_intelQuality),
-                    flags = XeSSInitFlags.XESS_INIT_FLAG_INVERTED_DEPTH | XeSSInitFlags.XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE | XeSSInitFlags.XESS_INIT_FLAG_USE_NDC_VELOCITY,
+                    flags = XeSSInitFlags.XESS_INIT_FLAG_INVERTED_DEPTH | XeSSInitFlags.XESS_INIT_FLAG_USE_NDC_VELOCITY,
                     jitterScaleX = 1f,
                     jitterScaleY = 1f,
                     motionVectorScaleX = -2f,
