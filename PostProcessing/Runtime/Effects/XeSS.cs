@@ -244,7 +244,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     inputHeight = (uint)renderSize.y,
                     jitterOffsetX = -jitterX,
                     jitterOffsetY = jitterY,
-                    exposureScale = 1.0f,
+                    exposureScale = 0.001f,
                     resetHistory = false,
                 };
                 GraphicsDevice.ExecuteXeSS(cmd, executeParam);
