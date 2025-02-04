@@ -109,6 +109,17 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_ShowToolkit;
         SerializedProperty m_ShowCustomSorter;
 
+        // SGSR 2
+        SerializedProperty m_SGSR2Variant;
+        SerializedProperty m_SGSR2QualityMode;
+
+        SerializedProperty m_SGSR2AutoTextureUpdate;
+        SerializedProperty m_SGSR2UpdateFrequency;
+        SerializedProperty m_SGSR2MipmapBiasOverride;
+
+        SerializedProperty m_SGSR2FallBack;
+        SerializedProperty m_SGSR2AntiGhosting;
+
         Dictionary<PostProcessEvent, ReorderableList> m_CustomLists;
 
 #if UNITY_2017_3_OR_NEWER
@@ -126,6 +137,7 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Deep Learning Super Sampling (DLSS)"),
             new GUIContent("Xe Super Sampling (XeSS)"),
+            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
         };
 
         static GUIContent[] s_AntialiasingDLSSFallBackMethodNames =
@@ -180,6 +192,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
         };
 
+        // TODO: SGSR2 fallbacks
+
         enum ExportMode
         {
             FullFrame,
@@ -212,7 +226,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_SGSRMipmapBiasOverride = FindProperty(x => x.sgsr.mipMapBiasOverride);
 
             m_SGSRUnityTAAEnabled = FindProperty(x => x.sgsr.UnityTAAEnabled);
-       
+
 #endif
 #if TND_FSR1
             m_FSR1QualityMode = FindProperty(x => x.fsr1.qualityMode);
@@ -275,11 +289,23 @@ namespace UnityEditor.Rendering.PostProcessing
             m_XeSSMipmapBiasOverride = FindProperty(x => x.xess.mipMapBiasOverride);
 
 #endif
+#if TND_SGSR2
+            m_SGSR2Variant = FindProperty(x => x.sgsr2.variant);
+            m_SGSR2QualityMode = FindProperty(x => x.sgsr2.qualityMode);
+
+            m_SGSR2AutoTextureUpdate = FindProperty(x => x.sgsr2.autoTextureUpdate);
+            m_SGSR2UpdateFrequency = FindProperty(x => x.sgsr2.updateFrequency);
+            m_SGSR2MipmapBiasOverride = FindProperty(x => x.sgsr2.mipMapBiasOverride);
+
+            m_SGSR2AntiGhosting = FindProperty(x => x.sgsr2.antiGhosting);
+#endif
+
             m_SGSRFallBack = FindProperty(x => x.sgsr.fallBackAA);
             m_FSR1FallBack = FindProperty(x => x.fsr1.fallBackAA);
             m_FSR3FallBack = FindProperty(x => x.fsr3.fallBackAA);
             m_DLSSFallBack = FindProperty(x => x.dlss.fallBackAA);
             m_XeSSFallBack = FindProperty(x => x.xess.fallBackAA);
+            m_SGSR2FallBack = FindProperty(x => x.sgsr2.fallBackAA);
 
             m_FogEnabled = FindProperty(x => x.fog.enabled);
             m_FogExcludeSkybox = FindProperty(x => x.fog.excludeSkybox);
@@ -613,6 +639,30 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.PropertyField(m_XeSSMipmapBiasOverride);
 #else
                     EditorGUILayout.LabelField(EditorUtilities.GetContent("----- XeSS Package not loaded ------"), EditorStyles.boldLabel);
+#endif
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.SGSR2)
+                {
+                    // TODO: properly implement fallbacks for SGSR2 (name list most of all)
+                    EditorGUI.indentLevel++;
+                    m_SGSR2FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when SGSR 2 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSR2FallBack.intValue, s_AntialiasingFSR3FallBackMethodNames);
+                    EditorGUI.indentLevel--;
+
+#if TND_SGSR2
+                    EditorGUILayout.PropertyField(m_SGSR2Variant);
+                    EditorGUILayout.PropertyField(m_SGSR2QualityMode);
+                    EditorGUILayout.PropertyField(m_SGSR2AntiGhosting);
+
+                    EditorGUILayout.PropertyField(m_SGSR2AutoTextureUpdate);
+                    if (m_SGSR2AutoTextureUpdate.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_SGSR2UpdateFrequency);
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.PropertyField(m_SGSR2MipmapBiasOverride);
+#else
+                    EditorGUILayout.LabelField(EditorUtilities.GetContent("----- SGSR 2 Package not loaded ------"), EditorStyles.boldLabel);
 #endif
                 }
             }

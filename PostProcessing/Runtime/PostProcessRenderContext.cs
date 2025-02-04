@@ -287,6 +287,14 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         /// <summary>
+        /// A reference to the SGSR2 settings for the rendering layer.
+        /// </summary>
+        public SGSR2 sgsr2
+        {
+            get; internal set;
+        }
+
+        /// <summary>
         /// A reference to the FSR1 settings for the rendering layer.
         /// </summary>
         public FSR1 superResolution1
@@ -428,6 +436,13 @@ namespace UnityEngine.Rendering.PostProcessing
         public bool IsXeSSActive()
         {
             return antialiasing == PostProcessLayer.Antialiasing.XeSS
+               && Application.isPlaying
+               && !isSceneView;
+        }
+
+        public bool IsSGSR2Active()
+        {
+            return antialiasing == PostProcessLayer.Antialiasing.SGSR2
                && Application.isPlaying
                && !isSceneView;
         }
