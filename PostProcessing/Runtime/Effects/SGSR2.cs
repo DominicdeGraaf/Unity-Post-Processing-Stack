@@ -283,7 +283,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 cmd.SetComputeConstantBufferParam(shader, idParams, constantBuffer, 0, constantBuffer.stride);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idInputColor, context.source);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idInputDepth, GetDepthTexture(context.camera), 0, RenderTextureSubElement.Depth);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInputDepth, GetDepthTexture(context.camera));
                 cmd.SetComputeTextureParam(shader, kernelIndex, idInputVelocity, BuiltinRenderTextureType.MotionVectors);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idMotionDepthClipAlphaBuffer, _sgsr2Context.MotionDepthClipAlpha);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idYCoCgColor, _sgsr2Context.ColorLuma);
@@ -325,7 +325,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.SetComputeConstantBufferParam(shader, idParams, constantBuffer, 0, constantBuffer.stride);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idInputOpaqueColor, colorOpaqueOnly);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idInputColor, context.source);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idInputDepth, GetDepthTexture(context.camera), 0, RenderTextureSubElement.Depth);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInputDepth, GetDepthTexture(context.camera));
                 cmd.SetComputeTextureParam(shader, kernelIndex, idInputVelocity, BuiltinRenderTextureType.MotionVectors);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idMotionDepthAlphaBuffer, _sgsr2Context.MotionDepthAlpha);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idYCoCgColor, _sgsr2Context.ColorLuma);
@@ -507,7 +507,7 @@ namespace UnityEngine.Rendering.PostProcessing
         private static BuiltinRenderTextureType GetDepthTexture(Camera cam)
         {
             RenderingPath renderingPath = cam.renderingPath;
-            return renderingPath == RenderingPath.Forward || renderingPath == RenderingPath.VertexLit ? BuiltinRenderTextureType.Depth : BuiltinRenderTextureType.CameraTarget;
+            return renderingPath == RenderingPath.Forward || renderingPath == RenderingPath.VertexLit ? BuiltinRenderTextureType.Depth : BuiltinRenderTextureType.ResolvedDepth;
         }
 
         internal Vector2Int GetScaledRenderSize(Camera camera)
