@@ -1969,6 +1969,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 else if (context.IsSGSR2Active())
                 {
 #if TND_SGSR2
+                    bool needsRandomWriteTarget = sgsr2.variant != TND.SGSR2.SGSR2_Variant.TwoPassFragment;
                     if (!context.stereoActive || context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Left)
                     {
                         sgsr2.ConfigureJitteredProjectionMatrix(context);
@@ -1980,7 +1981,7 @@ namespace UnityEngine.Rendering.PostProcessing
                         var finalDestination = context.destination;
                         //if (context.camera.stereoEnabled)
                         //{
-                        context.GetScreenSpaceTemporaryRT(cmd, upscaleTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: true);
+                        context.GetScreenSpaceTemporaryRT(cmd, upscaleTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: needsRandomWriteTarget);
                         //}
                         //else
                         //{
@@ -2007,7 +2008,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                         var upscaleTarget = m_TargetPool.Get();
                         var finalDestination = context.destination;
-                        context.GetScreenSpaceTemporaryRT(cmd, upscaleTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: true);
+                        context.GetScreenSpaceTemporaryRT(cmd, upscaleTarget, 0, context.sourceFormat, RenderTextureReadWrite.Linear, isUpscaleOutput: needsRandomWriteTarget);
                         context.destination = upscaleTarget;
                         sgsr2Stereo.colorOpaqueOnly = m_opaqueOnly;
                         sgsr2Stereo.Render(context, true);

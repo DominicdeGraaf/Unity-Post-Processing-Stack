@@ -104,9 +104,17 @@ namespace UnityEngine.Rendering.PostProcessing
             MipMapUtils.OnResetAllMipMaps(ref _prevMipMapBias);
         }
 
-        public bool IsSupported()
+        public bool IsSupported() => IsSupported(variant);
+
+        public bool IsSupported(SGSR2_Variant desiredVariant)
         {
-            return SystemInfo.supportsComputeShaders && SystemInfo.supportsMotionVectors;
+            switch (desiredVariant)
+            {
+                case SGSR2_Variant.TwoPassFragment:
+                    return SystemInfo.graphicsShaderLevel >= 35;
+                default:
+                    return SystemInfo.graphicsShaderLevel >= 45 && SystemInfo.supportsComputeShaders;
+            }
         }
 
         internal DepthTextureMode GetCameraFlags()
