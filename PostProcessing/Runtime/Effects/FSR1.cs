@@ -15,6 +15,7 @@ namespace UnityEngine.Rendering.PostProcessing
     {
         Off,
         Native,
+        UltraQuality,
         Quality,
         Balanced,
         Performance,
@@ -41,7 +42,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public FSR1_Quality qualityMode = FSR1_Quality.Quality;
         public float scaleFactor = new FloatParameter { value = 1.3f };
         public bool Sharpening = new BoolParameter { value = true };
-      
+
 
         [Range(0f, 1f), Tooltip("0 = sharpest, 2 = less sharp")]
         public float sharpness = new FloatParameter { value = 0.2f };
@@ -308,6 +309,10 @@ namespace UnityEngine.Rendering.PostProcessing
             else if (qualityMode == FSR1_Quality.Native)
             {
                 return 1.0f;
+            }
+            else if (qualityMode == FSR1_Quality.UltraQuality)
+            {
+                return 1.2f;
             }
             else if (qualityMode == FSR1_Quality.Quality)
             {

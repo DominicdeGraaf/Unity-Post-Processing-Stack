@@ -213,7 +213,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     resolution = displaySize,
                     qualitySetting = GraphicsDevice.QualityModeToInitSetting(_intelQuality),
                     flags = XeSSInitFlags.XESS_INIT_FLAG_INVERTED_DEPTH | XeSSInitFlags.XESS_INIT_FLAG_USE_NDC_VELOCITY,
-                    jitterScaleX = 1f,
+                    jitterScaleX = -1f,
                     jitterScaleY = 1f,
                     motionVectorScaleX = -2f,
                     motionVectorScaleY = 2f,
@@ -242,9 +242,9 @@ namespace UnityEngine.Rendering.PostProcessing
                     output = _xessOutput.GetNativeTexturePtr(),
                     inputWidth = (uint)renderSize.x,
                     inputHeight = (uint)renderSize.y,
-                    jitterOffsetX = -jitterX,
+                    jitterOffsetX = jitterX,
                     jitterOffsetY = jitterY,
-                    exposureScale = 0.001f,
+                    exposureScale = 1f,
                     resetHistory = false,
                 };
                 GraphicsDevice.ExecuteXeSS(cmd, executeParam);
