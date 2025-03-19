@@ -92,7 +92,6 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_DLSSMipmapBiasOverride;
 
         //XeSS
-
         SerializedProperty m_XeSSQualityMode;
         SerializedProperty m_XeSSFallBack;
         SerializedProperty m_XeSSAntiGhosting;
@@ -136,7 +135,7 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
             new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Deep Learning Super Sampling (DLSS)"),
-            new GUIContent("Xe Super Sampling (XeSS)"),
+            new GUIContent("Xe Super Sampling (XeSS 2)"),
             new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
         };
 
@@ -149,7 +148,7 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
             new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
             new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
-            new GUIContent("Xe Super Sampling (XeSS)"),
+            new GUIContent("Xe Super Sampling (XeSS 2)"),
         };
 
         static GUIContent[] s_AntialiasingXeSSFallBackMethodNames =
@@ -615,7 +614,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.LabelField("----- XeSS is not supported on this platform ------", EditorStyles.boldLabel);
 #endif
                     EditorGUI.indentLevel++;
-                    m_XeSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when XeSS is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_XeSSFallBack.intValue, s_AntialiasingXeSSFallBackMethodNames);
+                    m_XeSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when XeSS 2 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_XeSSFallBack.intValue, s_AntialiasingXeSSFallBackMethodNames);
                     EditorGUI.indentLevel--;
 #if TND_XeSS
 
