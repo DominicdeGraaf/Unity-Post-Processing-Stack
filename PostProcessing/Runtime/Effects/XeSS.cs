@@ -93,6 +93,10 @@ namespace UnityEngine.Rendering.PostProcessing
             if (!_supportedChecked)
             {
                 _supportedChecked = true;
+#if !UNITY_STANDALONE_WIN
+            return false;
+#endif
+
                 _supported = GraphicsDevice.CreateXeSSContext() >= 0;
             }
 #endif
@@ -126,7 +130,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal void ConfigureCameraViewport(PostProcessRenderContext context)
         {
-            var camera = context.camera; 
+            var camera = context.camera;
             _originalRect = camera.rect;
 
             displaySize = new Vector2Int(context.width, context.height);
@@ -230,7 +234,7 @@ namespace UnityEngine.Rendering.PostProcessing
             {
                 _motionVectorBuffer = Shader.GetGlobalTexture(_idMotionVectorTexture);
             }
-          
+
             if (_xessInput != null && _depthBuffer != null && _motionVectorBuffer != null)
             {
                 cmd.Blit(context.source, _xessInput);
