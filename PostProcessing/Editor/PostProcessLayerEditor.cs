@@ -80,6 +80,33 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_FSR3FallBack;
         SerializedProperty m_FSR3AntiGhosting;
 
+        //AASR
+        SerializedProperty m_AASRVariant;
+        SerializedProperty m_AASRQualityMode;
+        SerializedProperty m_AASRPerformSharpen;
+        SerializedProperty m_AASRSharpness;
+        SerializedProperty m_AASREnableFP16;
+        SerializedProperty m_AASRExposureSource;
+        SerializedProperty m_AASRExposureTexture;
+        SerializedProperty m_AASRPreExposure;
+        SerializedProperty m_AASRAutoReactive;
+        SerializedProperty m_AASRReactiveScale;
+        SerializedProperty m_AASRReactiveThreshold;
+        SerializedProperty m_AASRReactiveBinaryValue;
+        SerializedProperty m_AASRReactiveFlags;
+        SerializedProperty m_AASRReactiveMaskTexture;
+        SerializedProperty m_AASRAutoTextureUpdate;
+
+        SerializedProperty m_AASRUpdateFrequency;
+        SerializedProperty m_AASRMipmapBiasOverride;
+
+        SerializedProperty m_AASRAutoTcr;
+        SerializedProperty m_AASRAutoTcrParams;
+        SerializedProperty m_AASRTcrMaskTexture;
+
+        SerializedProperty m_AASRFallBack;
+        SerializedProperty m_AASRAntiGhosting;
+
         //DLSS
         SerializedProperty m_DLSSQualityMode;
         SerializedProperty m_DLSSFallBack;
@@ -137,6 +164,7 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Deep Learning Super Sampling (DLSS)"),
             new GUIContent("Xe Super Sampling (XeSS 2)"),
             new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
+            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
         };
 
         static GUIContent[] s_AntialiasingDLSSFallBackMethodNames =
@@ -149,6 +177,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
             new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Xe Super Sampling (XeSS 2)"),
+            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
+            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
         };
 
         static GUIContent[] s_AntialiasingXeSSFallBackMethodNames =
@@ -161,6 +191,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
             new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
             new GUIContent("Deep Learning Super Sampling (DLSS)"),
+            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
+            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
         };
 
         static GUIContent[] s_AntialiasingFSR3FallBackMethodNames =
@@ -171,6 +203,8 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("Temporal Anti-aliasing (TAA)"),
             new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
             new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
+            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
+            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
         };
 
         static GUIContent[] s_AntialiasingFSR1FallBackMethodNames =
@@ -191,6 +225,14 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
         };
 
+        static GUIContent[] s_AntialiasingAASRFallBackMethodNames =
+{
+            new GUIContent("No Anti-aliasing"),
+            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
+            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
+            new GUIContent("Temporal Anti-aliasing (TAA)"),
+            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
+        };
         // TODO: SGSR2 fallbacks
 
         enum ExportMode
@@ -298,13 +340,42 @@ namespace UnityEditor.Rendering.PostProcessing
 
             m_SGSR2AntiGhosting = FindProperty(x => x.sgsr2.antiGhosting);
 #endif
+#if TND_AASR
+            m_AASRVariant = FindProperty(x => x.aasr.variant);
+            m_AASRQualityMode = FindProperty(x => x.aasr.qualityMode);
+            m_AASRPerformSharpen = FindProperty(x => x.aasr.Sharpening);
+            m_AASRSharpness = FindProperty(x => x.aasr.sharpness);
 
+            m_AASRExposureSource = FindProperty(x => x.aasr.exposureSource);
+            m_AASRExposureTexture = FindProperty(x => x.aasr.exposure);
+            m_AASRPreExposure = FindProperty(x => x.aasr.preExposure);
+            m_AASRAutoReactive = FindProperty(x => x.aasr.autoGenerateReactiveMask);
+
+            m_AASRReactiveScale = FindProperty(x => x.aasr.ReactiveScale);
+            m_AASRReactiveThreshold = FindProperty(x => x.aasr.ReactiveThreshold);
+            m_AASRReactiveBinaryValue = FindProperty(x => x.aasr.ReactiveBinaryValue);
+            m_AASRReactiveFlags = FindProperty(x => x.aasr.flags);
+
+            m_AASRReactiveMaskTexture = FindProperty(x => x.aasr.reactiveMask);
+
+            m_AASRAutoTcr = FindProperty(x => x.aasr.autoGenerateTransparencyAndComposition);
+            m_AASRAutoTcrParams = FindProperty(x => x.aasr.generateTransparencyAndCompositionParameters);
+            m_AASRTcrMaskTexture = FindProperty(x => x.aasr.transparencyAndCompositionMask);
+
+            m_AASRAutoTextureUpdate = FindProperty(x => x.aasr.autoTextureUpdate);
+            m_AASRUpdateFrequency = FindProperty(x => x.aasr.updateFrequency);
+            m_AASRMipmapBiasOverride = FindProperty(x => x.aasr.mipMapBiasOverride);
+
+            m_AASRAntiGhosting = FindProperty(x => x.aasr.antiGhosting);
+
+#endif
             m_SGSRFallBack = FindProperty(x => x.sgsr.fallBackAA);
             m_FSR1FallBack = FindProperty(x => x.fsr1.fallBackAA);
             m_FSR3FallBack = FindProperty(x => x.fsr3.fallBackAA);
             m_DLSSFallBack = FindProperty(x => x.dlss.fallBackAA);
             m_XeSSFallBack = FindProperty(x => x.xess.fallBackAA);
             m_SGSR2FallBack = FindProperty(x => x.sgsr2.fallBackAA);
+            m_AASRFallBack = FindProperty(x => x.aasr.fallBackAA);
 
             m_FogEnabled = FindProperty(x => x.fog.enabled);
             m_FogExcludeSkybox = FindProperty(x => x.fog.excludeSkybox);
@@ -663,6 +734,51 @@ namespace UnityEditor.Rendering.PostProcessing
 #else
                     EditorGUILayout.LabelField(EditorUtilities.GetContent("----- SGSR 2 Package not loaded ------"), EditorStyles.boldLabel);
 #endif
+                }
+                else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.AASR)
+                {
+                    EditorGUI.indentLevel++;
+                    m_AASRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when AASR is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_AASRFallBack.intValue, s_AntialiasingAASRFallBackMethodNames);
+                    EditorGUI.indentLevel--;
+
+#if TND_AASR
+                    EditorGUILayout.Space();
+                    if (GUILayout.Button("Looking for more Upscalers?\n FSR 3.1, DLSS and XeSS? \n\n Visit 'The Naked Dev' Store!"))
+                    {
+                        Application.OpenURL("https://assetstore.unity.com/publishers/14941");
+                    }
+                    EditorGUILayout.PropertyField(m_AASRVariant);
+                    EditorGUILayout.PropertyField(m_AASRQualityMode);
+                    EditorGUILayout.PropertyField(m_AASRAntiGhosting);
+                    EditorGUILayout.PropertyField(m_AASRPerformSharpen);
+                    if (m_AASRPerformSharpen.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_AASRSharpness);
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.PropertyField(m_AASRAutoReactive);
+                    if (m_AASRAutoReactive.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_AASRReactiveScale);
+                        EditorGUILayout.PropertyField(m_AASRReactiveThreshold);
+                        EditorGUILayout.PropertyField(m_AASRReactiveBinaryValue);
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUILayout.PropertyField(m_AASRAutoTextureUpdate);
+                    if (m_AASRAutoTextureUpdate.boolValue)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_AASRUpdateFrequency);
+                        EditorGUI.indentLevel--;
+                    }
+                    EditorGUILayout.PropertyField(m_AASRMipmapBiasOverride);
+#else
+                    EditorGUILayout.LabelField(EditorUtilities.GetContent("----- AASR Package not loaded ------"), EditorStyles.boldLabel);
+#endif
+
                 }
             }
             EditorGUI.indentLevel--;
