@@ -1,23 +1,3 @@
-// Copyright (c) 2023 Nico de Poel
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -322,6 +302,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.camera.GetComponent<AASR_BASE>().enabled = false;
                 Debug.LogWarning("[AASR] Don't use the AASR_BIRP and Custom Post Processing stack at the same time!");
             }
+
             _prevVariantMode = variant;
             _prevQualityMode = qualityMode;
             _prevExposureSource = exposureSource;
@@ -345,7 +326,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
             _asrContext = Asr.CreateContext((Asr.Variant)variant, _displaySize, _maxRenderSize, _asrAssets.shaderBundle, flags);
         }
-        
+
         private void DestroyAASRContext()
         {
             if (_asrContext != null)
@@ -475,7 +456,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 _dispatchDescription.Sharpness = sharpness;
 
                 _dispatchDescription.RenderSize = scaledRenderSize;
-                //_dispatchDescription.UpscaleSize = displaySize;//TODO
+                _dispatchDescription.InputResourceSize = scaledRenderSize;
+
                 _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
                 _dispatchDescription.CameraNear = camera.nearClipPlane;
                 _dispatchDescription.CameraFar = camera.farClipPlane;
@@ -504,7 +486,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 _dispatchDescription.Sharpness = context.aasr.sharpness;
 
                 _dispatchDescription.RenderSize = scaledRenderSize;
-                //_dispatchDescription.UpscaleSize = displaySize;//TODO
+                _dispatchDescription.InputResourceSize = scaledRenderSize;
+
                 _dispatchDescription.FrameTimeDelta = Time.unscaledDeltaTime;
                 _dispatchDescription.CameraNear = camera.nearClipPlane;
                 _dispatchDescription.CameraFar = camera.farClipPlane;
