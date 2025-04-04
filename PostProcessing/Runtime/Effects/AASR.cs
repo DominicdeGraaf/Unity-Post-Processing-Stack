@@ -432,12 +432,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 _dispatchDescription.MotionVectorScale.y = -scaledRenderSize.y;
             }
 
-            if (SystemInfo.usesReversedZBuffer)
-            {
-                // Swap the near and far clip plane distances as AASR expects this when using inverted depth
-                (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
-            }
-
             if (!isStereoRendering)
             {
                 if (exposureSource == ExposureSource.Manual && exposure != null)
@@ -496,6 +490,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 _dispatchDescription.Reset = context.aasr._resetHistory;
 
                 autoGenerateReactiveMask = context.aasr.autoGenerateReactiveMask;
+            }
+
+            if (SystemInfo.usesReversedZBuffer)
+            {
+                // Swap the near and far clip plane distances as AASR expects this when using inverted depth
+                (_dispatchDescription.CameraNear, _dispatchDescription.CameraFar) = (_dispatchDescription.CameraFar, _dispatchDescription.CameraNear);
             }
         }
 
