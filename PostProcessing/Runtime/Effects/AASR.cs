@@ -150,7 +150,7 @@ namespace UnityEngine.Rendering.PostProcessing
             MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
         /// <summary>
-        /// Resets all currently loaded textures to the default mipmap bias. 
+        /// Resets all currently loaded textures to the default mipmap bias.
         /// </summary>
         public void OnResetAllMipMaps()
         {
@@ -223,6 +223,8 @@ namespace UnityEngine.Rendering.PostProcessing
             _displaySize = new Vector2Int(context.aasr._displaySize.x, context.aasr._displaySize.y);
 
             qualityMode = context.aasr.qualityMode;
+            variant = context.aasr.variant;
+
             Asr.GetRenderResolutionFromQualityMode(out int maxRenderWidth, out int maxRenderHeight, _displaySize.x, _displaySize.y, (Asr.QualityMode)((int)qualityMode - 1));
             _maxRenderSize = new Vector2Int(maxRenderWidth, maxRenderHeight);
 
@@ -525,7 +527,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private static BuiltinRenderTextureType GetDepthTexture(Camera cam)
         {
-            RenderingPath renderingPath = cam.renderingPath;
+            RenderingPath renderingPath = cam.actualRenderingPath;
             return renderingPath == RenderingPath.Forward || renderingPath == RenderingPath.VertexLit ? BuiltinRenderTextureType.Depth : BuiltinRenderTextureType.CameraTarget;
         }
 

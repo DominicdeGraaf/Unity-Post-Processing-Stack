@@ -171,7 +171,7 @@ namespace UnityEngine.Rendering.PostProcessing
             MipMapUtils.OnMipMapAllTextures(renderSize.x, displaySize.x, mipMapBiasOverride);
         }
         /// <summary>
-        /// Resets all currently loaded textures to the default mipmap bias. 
+        /// Resets all currently loaded textures to the default mipmap bias.
         /// </summary>
         public void OnResetAllMipMaps()
         {
@@ -546,7 +546,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private static BuiltinRenderTextureType GetDepthTexture(Camera cam)
         {
-            RenderingPath renderingPath = cam.renderingPath;
+            RenderingPath renderingPath = cam.actualRenderingPath;
             return renderingPath == RenderingPath.Forward || renderingPath == RenderingPath.VertexLit ? BuiltinRenderTextureType.Depth : BuiltinRenderTextureType.CameraTarget;
         }
 

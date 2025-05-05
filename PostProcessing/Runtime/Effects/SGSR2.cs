@@ -35,10 +35,8 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(0, 1)]
         public float mipMapBiasOverride = 1f;
 
-        public Vector2 jitter
-        {
-            get; private set;
-        }
+        public Vector2 jitter { get; private set; }
+
         public Vector2Int renderSize => _maxRenderSize;
         public Vector2Int displaySize => _displaySize;
         public RenderTargetIdentifier colorOpaqueOnly
@@ -178,6 +176,7 @@ namespace UnityEngine.Rendering.PostProcessing
             _displaySize = new Vector2Int(context.sgsr2._displaySize.x, context.sgsr2._displaySize.y);
 
             qualityMode = context.sgsr2.qualityMode;
+            variant = context.sgsr2.variant;
 
             float scaleRatio = GetScaling(qualityMode);
             _maxRenderSize = new Vector2Int(Mathf.RoundToInt(_displaySize.x / scaleRatio), Mathf.RoundToInt(_displaySize.y / scaleRatio));
@@ -226,7 +225,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             Vector2Int scaledRenderSize = GetScaledRenderSize(context.camera);
-            _sgsr2Context.UpdateFrameData(cmd, context.camera, scaledRenderSize, _jitterOffset, preExposure, _resetHistory);
+            _sgsr2Context.UpdateFrameData(cmd, context.camera, scaledRenderSize, _jitterOffset, preExposure, _resetHistory, stereoRendering);
 
             switch (variant)
             {
@@ -270,7 +269,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // We render to both the output destination and the history buffer at the same time, to save on an extra texture copy.
             _mrt[0] = context.destination;
             _mrt[1] = _sgsr2Context.NextUpscaleHistory;
-            cmd.BlitFullscreenTriangle(BuiltinRenderTextureType.None, _mrt, BuiltinRenderTextureType.None, _propertySheet, 1);
+            cmd.BlitFullscreenTriangle(BuiltinRenderTextureType.None, _mrt, context.destination, _propertySheet, 1);
         }
 
         private void RenderTwoPassCompute(PostProcessRenderContext context, in Vector2Int scaledRenderSize)
@@ -305,8 +304,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 cmd.SetComputeConstantBufferParam(shader, idParams, constantBuffer, 0, constantBuffer.stride);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idPrevHistoryOutput, _sgsr2Context.PrevUpscaleHistory);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idMotionDepthClipAlphaBuffer, _sgsr2Context.MotionDepthClipAlpha);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idYCoCgColor, _sgsr2Context.ColorLuma);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInMotionDepthClipAlphaBuffer, _sgsr2Context.MotionDepthClipAlpha);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInYCoCgColor, _sgsr2Context.ColorLuma);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idSceneColorOutput, context.destination);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idHistoryOutput, _sgsr2Context.NextUpscaleHistory);
 
@@ -347,8 +346,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 cmd.SetComputeConstantBufferParam(shader, idParams, constantBuffer, 0, constantBuffer.stride);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idPrevLumaHistory, _sgsr2Context.PrevLumaHistory);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idMotionDepthAlphaBuffer, _sgsr2Context.MotionDepthAlpha);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idYCoCgColor, _sgsr2Context.ColorLuma);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInMotionDepthAlphaBuffer, _sgsr2Context.MotionDepthAlpha);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInYCoCgColor, _sgsr2Context.ColorLuma);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idMotionDepthClipAlphaBuffer, _sgsr2Context.MotionDepthClipAlpha);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idLumaHistory, _sgsr2Context.NextLumaHistory);
 
@@ -361,8 +360,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 cmd.SetComputeConstantBufferParam(shader, idParams, constantBuffer, 0, constantBuffer.stride);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idPrevHistoryOutput, _sgsr2Context.PrevUpscaleHistory);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idMotionDepthClipAlphaBuffer, _sgsr2Context.MotionDepthClipAlpha);
-                cmd.SetComputeTextureParam(shader, kernelIndex, idYCoCgColor, _sgsr2Context.ColorLuma);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInMotionDepthClipAlphaBuffer, _sgsr2Context.MotionDepthClipAlpha);
+                cmd.SetComputeTextureParam(shader, kernelIndex, idInYCoCgColor, _sgsr2Context.ColorLuma);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idSceneColorOutput, context.destination);
                 cmd.SetComputeTextureParam(shader, kernelIndex, idHistoryOutput, _sgsr2Context.NextUpscaleHistory);
 
@@ -440,17 +439,7 @@ namespace UnityEngine.Rendering.PostProcessing
             jitterY += Random.Range(-0.001f * antiGhosting, 0.001f * antiGhosting);
             jitter = new Vector2(jitterX, jitterY);
 
-            if (camera.stereoEnabled)
-            {
-                // We only need to configure all of this once for stereo, during OnPreCull
-                if (camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
-                    ConfigureStereoJitteredProjectionMatrices(context, camera);
-            }
-            else
-            {
-                ConfigureJitteredProjectionMatrix(camera, jitterX, jitterY);
-            }
-
+            ConfigureJitteredProjectionMatrix(camera, jitterX, jitterY);
         }
 
         /// <summary>
@@ -462,30 +451,6 @@ namespace UnityEngine.Rendering.PostProcessing
             var projectionMatrix = camera.projectionMatrix;
             camera.nonJitteredProjectionMatrix = projectionMatrix;
             camera.projectionMatrix = jitterTranslationMatrix * camera.nonJitteredProjectionMatrix;
-            camera.useJitteredProjectionMatrixForTransparentRendering = true;
-        }
-
-        /// <summary>
-        /// Prepares the jittered and non jittered projection matrices for stereo rendering.
-        /// </summary>
-        /// <param name="context">The current post-processing context.</param>
-        // TODO: We'll probably need to isolate most of this for SRPs
-        public void ConfigureStereoJitteredProjectionMatrices(PostProcessRenderContext context, Camera camera)
-        {
-            for (var eye = Camera.StereoscopicEye.Left; eye <= Camera.StereoscopicEye.Right; eye++)
-            {
-                // This saves off the device generated projection matrices as non-jittered
-                camera.CopyStereoDeviceProjectionMatrixToNonJittered(eye);
-                var originalProj = camera.GetStereoNonJitteredProjectionMatrix(eye);
-                // Currently no support for custom jitter func, as VR devices would need to provide
-                // original projection matrix as input along with jitter
-                var jitteredMatrix = RuntimeUtilities.GenerateJitteredProjectionMatrixFromOriginal(context, originalProj, jitter);
-                camera.SetStereoProjectionMatrix(eye, jitteredMatrix);
-            }
-
-            // jitter has to be scaled for the actual eye texture size, not just the intermediate texture size
-            // which could be double-wide in certain stereo rendering scenarios
-            jitter = new Vector2(jitter.x / context.screenWidth, jitter.y / context.screenHeight);
             camera.useJitteredProjectionMatrixForTransparentRendering = true;
         }
 
@@ -514,7 +479,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         private static BuiltinRenderTextureType GetDepthTexture(Camera cam)
         {
-            RenderingPath renderingPath = cam.renderingPath;
+            RenderingPath renderingPath = cam.actualRenderingPath;
             return renderingPath == RenderingPath.Forward || renderingPath == RenderingPath.VertexLit ? BuiltinRenderTextureType.Depth : BuiltinRenderTextureType.ResolvedDepth;
         }
 

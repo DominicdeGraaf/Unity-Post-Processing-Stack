@@ -2092,6 +2092,8 @@ namespace UnityEngine.Rendering.PostProcessing
                     }
                     else if (context.stereoActive && context.camera.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right)
                     {
+                        sgsr2Stereo.ConfigureJitteredProjectionMatrix(context);
+
                         //Set the upscaler's output to full display resolution, as well as for all following post-processing effects
                         context.SetRenderSize(sgsr2Stereo.displaySize);
 

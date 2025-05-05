@@ -76,7 +76,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
         public void SetRenderSize(Vector2Int renderSize)
         {
-            // TODO: I suppose we should support XR as well at some point
             width = renderSize.x;
             height = renderSize.y;
             m_sourceDescriptor.width = width;
