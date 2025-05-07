@@ -167,74 +167,6 @@ namespace UnityEditor.Rendering.PostProcessing
             new GUIContent("ARM Accuracy Super Resolution (AASR)"),
         };
 
-        static GUIContent[] s_AntialiasingDLSSFallBackMethodNames =
-        {
-            new GUIContent("No Anti-aliasing"),
-            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
-            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
-            new GUIContent("Temporal Anti-aliasing (TAA)"),
-            new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
-            new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
-            new GUIContent("Xe Super Sampling (XeSS 2)"),
-            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
-            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
-        };
-
-        static GUIContent[] s_AntialiasingXeSSFallBackMethodNames =
-        {
-            new GUIContent("No Anti-aliasing"),
-            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
-            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
-            new GUIContent("Temporal Anti-aliasing (TAA)"),
-            new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
-            new GUIContent("FidelityFX Super Resolution 3.1 (FSR 3.1)"),
-            new GUIContent("Deep Learning Super Sampling (DLSS)"),
-            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
-            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
-        };
-
-        static GUIContent[] s_AntialiasingFSR3FallBackMethodNames =
-        {
-            new GUIContent("No Anti-aliasing"),
-            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
-            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
-            new GUIContent("Temporal Anti-aliasing (TAA)"),
-            new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR 1)"),
-            new GUIContent("Snapdragon Game Super Resolution 2 (SGSR 2)"),
-            new GUIContent("ARM Accuracy Super Resolution (AASR)"),
-        };
-
-        static GUIContent[] s_AntialiasingFSR1FallBackMethodNames =
-        {
-            new GUIContent("No Anti-aliasing"),
-            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
-            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
-            new GUIContent("Temporal Anti-aliasing (TAA)"),
-            new GUIContent("Snapdragon Game Super Resolution (SGSR)"),
-        };
-
-        static GUIContent[] s_AntialiasingSGSRFallBackMethodNames =
-        {
-            new GUIContent("No Anti-aliasing"),
-            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
-            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
-            new GUIContent("Temporal Anti-aliasing (TAA)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
-        };
-
-        static GUIContent[] s_AntialiasingAASRFallBackMethodNames =
-{
-            new GUIContent("No Anti-aliasing"),
-            new GUIContent("Fast Approximate Anti-aliasing (FXAA)"),
-            new GUIContent("Subpixel Morphological Anti-aliasing (SMAA)"),
-            new GUIContent("Temporal Anti-aliasing (TAA)"),
-            new GUIContent("FidelityFX Super Resolution 1 (FSR1)"),
-        };
-        // TODO: SGSR2 fallbacks
-
         enum ExportMode
         {
             FullFrame,
@@ -499,7 +431,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.SGSR)
                 {
                     EditorGUI.indentLevel++;
-                    m_SGSRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when SGSR is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSRFallBack.intValue, s_AntialiasingSGSRFallBackMethodNames);
+                    m_SGSRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when SGSR is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSRFallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 #if TND_SGSR
                     EditorGUILayout.PropertyField(m_SGSRQualityMode);
@@ -546,7 +478,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR1)
                 {
                     EditorGUI.indentLevel++;
-                    m_FSR1FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when FSR 1 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR1FallBack.intValue, s_AntialiasingFSR1FallBackMethodNames);
+                    m_FSR1FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when FSR 1 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR1FallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 #if TND_FSR1
                     EditorGUILayout.PropertyField(m_FSR1QualityMode);
@@ -600,7 +532,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.FSR3)
                 {
                     EditorGUI.indentLevel++;
-                    m_FSR3FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when FSR 3 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR3FallBack.intValue, s_AntialiasingFSR3FallBackMethodNames);
+                    m_FSR3FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when FSR 3 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_FSR3FallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 
 #if TND_FSR3
@@ -643,7 +575,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.LabelField("----- DLSS is not supported on this platform ------", EditorStyles.boldLabel);
 #endif
                     EditorGUI.indentLevel++;
-                    m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when DLSS is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingDLSSFallBackMethodNames);
+                    m_DLSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when DLSS is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_DLSSFallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 
 #if !DLSS_INSTALLED
@@ -685,7 +617,7 @@ namespace UnityEditor.Rendering.PostProcessing
                     EditorGUILayout.LabelField("----- XeSS is not supported on this platform ------", EditorStyles.boldLabel);
 #endif
                     EditorGUI.indentLevel++;
-                    m_XeSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when XeSS 2 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_XeSSFallBack.intValue, s_AntialiasingXeSSFallBackMethodNames);
+                    m_XeSSFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when XeSS 2 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_XeSSFallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 #if TND_XeSS
 
@@ -715,7 +647,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 {
                     // TODO: properly implement fallbacks for SGSR2 (name list most of all)
                     EditorGUI.indentLevel++;
-                    m_SGSR2FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when SGSR 2 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSR2FallBack.intValue, s_AntialiasingFSR3FallBackMethodNames);
+                    m_SGSR2FallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when SGSR 2 is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_SGSR2FallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 
 #if TND_SGSR2
@@ -738,7 +670,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 else if (m_AntialiasingMode.intValue == (int)PostProcessLayer.Antialiasing.AASR)
                 {
                     EditorGUI.indentLevel++;
-                    m_AASRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when AASR is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_AASRFallBack.intValue, s_AntialiasingAASRFallBackMethodNames);
+                    m_AASRFallBack.intValue = EditorGUILayout.Popup(EditorUtilities.GetContent("Fall Back|The anti-aliasing method to use when AASR is not supported. FXAA is fast but low quality. SMAA works well for non-HDR scenes. TAA is a bit slower but higher quality and works well with HDR."), m_AASRFallBack.intValue, s_AntialiasingMethodNames);
                     EditorGUI.indentLevel--;
 
 #if TND_AASR
